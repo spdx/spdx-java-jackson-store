@@ -37,6 +37,7 @@ import org.spdx.storage.ISerializableModelStore;
 import org.spdx.storage.simple.InMemSpdxStore;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -49,7 +50,7 @@ import com.google.gson.stream.JsonWriter;
  */
 public class JsonStore extends InMemSpdxStore implements ISerializableModelStore {
 
-	Gson gson = new Gson();
+	Gson gson = new GsonBuilder().setPrettyPrinting().create();
 	/**
 	 * Construct an empty Json Store
 	 */
@@ -63,14 +64,28 @@ public class JsonStore extends InMemSpdxStore implements ISerializableModelStore
 	public void serialize(String documentUri, OutputStream stream) throws InvalidSPDXAnalysisException, IOException {
 		// Start with the document
 		TypedValue document = new TypedValue(SpdxConstants.SPDX_DOCUMENT_ID, SpdxConstants.CLASS_SPDX_DOCUMENT);
-		JsonElement jsonDoc = toJsonElement(documentUri, document);
+		JsonObject jsonDoc = toJsonObject(documentUri, document);
+		// Add relationships
+		JsonArray relationships = new JsonArray();
+		this.getAllItems(documentUri, SpdxConstants.CLASS_RELATIONSHIP).forEach(tv -> {
+			try {
+				relationships.add(toJsonElement(documentUri, tv));
+			} catch (InvalidSPDXAnalysisException e) {
+				throw new RuntimeException(e);
+			}
+		});
+		jsonDoc.add("relationships", relationships);
 		JsonObject output = new JsonObject();
 		output.add("Document", jsonDoc);
 		//TODO: Fix up things like the relationships
 		//TODO: How to handle license expressions
 		JsonWriter writer = new JsonWriter(new OutputStreamWriter(stream));
-		gson.toJson(output, writer);
-		//TODO: Should I close this here or leave it up to the caller?
+		writer.setIndent("  ");
+		try {
+			gson.toJson(output, writer);
+		} finally {
+			writer.close();
+		}
 	}
 
 	/**
@@ -113,7 +128,7 @@ public class JsonStore extends InMemSpdxStore implements ISerializableModelStore
 		} else if (SpdxConstants.URI_VALUE_NOASSERTION.equals(uri)) {
 			return new JsonPrimitive(SpdxConstants.NOASSERTION_VALUE);
 		} else {
-			throw new SpdxInvalidTypeException("Can not JSON serialize unknown URI value type: "+uri);
+			return new JsonPrimitive(uri);
 		}
 	}
 
@@ -126,9 +141,12 @@ public class JsonStore extends InMemSpdxStore implements ISerializableModelStore
 	 */
 	private JsonObject toJsonObject(String documentUri, TypedValue storedItem) throws InvalidSPDXAnalysisException {
 		//TODO: Check for special types we may want to just convert to strings like AnyLicenseInfo
-		List<String> docPropNames = new ArrayList<String>(this.getPropertyValueNames(documentUri, SpdxConstants.SPDX_DOCUMENT_ID));
+		List<String> docPropNames = new ArrayList<String>(this.getPropertyValueNames(documentUri, storedItem.getId()));
 		JsonObject retval = new JsonObject();
 		for (String propertyName:docPropNames) {
+			if (SpdxConstants.PROP_RELATIONSHIP.equals(propertyName)) {
+				continue;
+			}
 			if (this.isCollectionProperty(documentUri, storedItem.getId(), propertyName)) {
 				retval.add(propertyName, toJsonArray(documentUri, this.getValueList(documentUri, storedItem.getId(), propertyName)));
 			} else {
