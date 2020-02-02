@@ -33,11 +33,13 @@ import org.spdx.library.InvalidSPDXAnalysisException;
 import org.spdx.library.SpdxConstants;
 import org.spdx.library.model.ExternalSpdxElement;
 import org.spdx.library.model.IndividualUriValue;
+import org.spdx.library.model.SpdxElement;
 import org.spdx.library.model.SpdxInvalidTypeException;
 import org.spdx.library.model.SpdxModelFactory;
 import org.spdx.library.model.TypedValue;
 import org.spdx.library.model.enumerations.SpdxEnumFactory;
 import org.spdx.library.model.license.AnyLicenseInfo;
+import org.spdx.storage.IModelStore;
 import org.spdx.storage.ISerializableModelStore;
 import org.spdx.storage.simple.InMemSpdxStore;
 
@@ -55,6 +57,12 @@ import com.google.gson.stream.JsonWriter;
  */
 public class JsonStore extends InMemSpdxStore implements ISerializableModelStore {
 	
+	public enum JsonFormat {
+		COMPACT,		// SPDX identifiers are used for any SPDX element references, license expressions as text
+		STANDARD,		// Expand referenced SPDX element, license expressions as text
+		FULL			// Expand all licenses to full objects and expand all SPDX elements
+	}
+	
 	static final Logger logger = LoggerFactory.getLogger(JsonStore.class);
 
 	Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -69,24 +77,36 @@ public class JsonStore extends InMemSpdxStore implements ISerializableModelStore
 	 * @see org.spdx.storage.ISerializableModelStore#serialize(java.lang.String, java.io.OutputStream)
 	 */
 	public void serialize(String documentUri, OutputStream stream) throws InvalidSPDXAnalysisException, IOException {
+		serialize(documentUri, stream, JsonFormat.COMPACT);
+	}
+	
+	/**
+	 * @param documentUri Document namespace or Uri
+	 * @param stream to write the document to
+	 * @param format Json Format - controls how much object are expanded or just referred to with ID's and references
+	 * @throws InvalidSPDXAnalysisException
+	 * @throws IOException
+	 */
+	public void serialize(String documentUri, OutputStream stream, JsonFormat format) throws InvalidSPDXAnalysisException, IOException {
 		// Start with the document
 		TypedValue document = new TypedValue(SpdxConstants.SPDX_DOCUMENT_ID, SpdxConstants.CLASS_SPDX_DOCUMENT);
 		JsonArray relationships = new JsonArray();
-		JsonObject jsonDoc = toJsonObject(documentUri, document, relationships);
+		JsonObject jsonDoc = toJsonObject(documentUri, document, relationships, format);
 		JsonArray documentDescribes = getDocumentDescribes(relationships);
 		jsonDoc.add(SpdxConstants.PROP_DOCUMENT_DESCRIBES, documentDescribes);
-		JsonArray packages = getDocElements(documentUri, SpdxConstants.CLASS_SPDX_PACKAGE);
+		JsonArray packages = getDocElements(documentUri, SpdxConstants.CLASS_SPDX_PACKAGE, relationships, format);
 		if (packages.size() > 0) {
 			jsonDoc.add(SpdxConstants.PROP_DOCUMENT_PACKAGES, packages);
 		}
-		JsonArray files = getDocElements(documentUri, SpdxConstants.CLASS_SPDX_FILE);
+		JsonArray files = getDocElements(documentUri, SpdxConstants.CLASS_SPDX_FILE, relationships, format);
 		if (files.size() > 0) {
 			jsonDoc.add(SpdxConstants.PROP_DOCUMENT_FILES, files);
 		}		
-		JsonArray snippets = getDocElements(documentUri, SpdxConstants.CLASS_SPDX_SNIPPET);
+		JsonArray snippets = getDocElements(documentUri, SpdxConstants.CLASS_SPDX_SNIPPET, relationships, format);
 		if (snippets.size() > 0) {
 			jsonDoc.add(SpdxConstants.PROP_DOCUMENT_SNIPPETS, snippets);
 		}
+		//TODO: Remove duplicate relationships
 		jsonDoc.add(SpdxConstants.PROP_DOCUMENT_RELATIONSHIPS, relationships);
 		JsonObject output = new JsonObject();
 		output.add("Document", jsonDoc);
@@ -103,14 +123,14 @@ public class JsonStore extends InMemSpdxStore implements ISerializableModelStore
 	 * @param documentUri Document namespace or Uri
 	 * @param type type of document element to get (Package, File, or Snippet)
 	 * @return JsonArray of document elements matching the type
+	 * @param format Json Format - controls how much object are expanded or just referred to with ID's and references
 	 * @throws InvalidSPDXAnalysisException
 	 */
-	private JsonArray getDocElements(String documentUri, String type) throws InvalidSPDXAnalysisException {
+	private JsonArray getDocElements(String documentUri, String type, JsonArray relationships, JsonFormat format) throws InvalidSPDXAnalysisException {
 		JsonArray retval = new JsonArray();
-		JsonArray relationships = new JsonArray();
 		this.getAllItems(documentUri, type).forEach(tv -> {
 			try {
-				retval.add(toJsonObject(documentUri, tv, relationships));
+				retval.add(toJsonObject(documentUri, tv, relationships, format));
 			} catch (InvalidSPDXAnalysisException e) {
 				throw new RuntimeException(e);
 			}
@@ -120,6 +140,7 @@ public class JsonStore extends InMemSpdxStore implements ISerializableModelStore
 
 	/**
 	 * @param relationships all relationships in the document
+	 * @param format Json Format - controls how much object are expanded or just referred to with ID's and references
 	 * @return all related element IDs for DOCUMENT_DESCRIBES relationships from the Spdx Document
 	 */
 	private JsonArray getDocumentDescribes(JsonArray relationships) {
@@ -146,21 +167,27 @@ public class JsonStore extends InMemSpdxStore implements ISerializableModelStore
 	 * @param documentUri Document namespace or Uri
 	 * @param storedValue Value to convert to a JSON serializable form
 	 * @param relationships JsonArray of relationships to add any found relationships
+	 * @param format Json Format - controls how much object are expanded or just referred to with ID's and references
 	 * @return Json form of the item
 	 * @throws InvalidSPDXAnalysisException 
 	 */
-	private JsonElement toJsonElement(String documentUri, Object storedValue, JsonArray relationships) throws InvalidSPDXAnalysisException {
+	private JsonElement toJsonElement(String documentUri, Object storedValue, JsonArray relationships, JsonFormat format) throws InvalidSPDXAnalysisException {
 		if (storedValue instanceof IndividualUriValue) {
 			return individualUriToJsonElement(documentUri, ((IndividualUriValue)storedValue).getIndividualURI());
 		} else if (storedValue instanceof TypedValue) {
 			TypedValue tvStoredValue = (TypedValue)storedValue;
 			Class<?> clazz = SpdxModelFactory.SPDX_TYPE_TO_CLASS.get(tvStoredValue.getType());
-			if (AnyLicenseInfo.class.isAssignableFrom(clazz)) {
+			if (AnyLicenseInfo.class.isAssignableFrom(clazz) && 
+					(JsonFormat.STANDARD.equals(format) || JsonFormat.COMPACT.equals(format))) {
 				AnyLicenseInfo ali = (AnyLicenseInfo)SpdxModelFactory.createModelObject(this, documentUri, 
 						tvStoredValue.getId(), tvStoredValue.getType(), null);
 				return new JsonPrimitive(ali.toString());
+			} else if (SpdxElement.class.isAssignableFrom(clazz) &&
+					JsonFormat.COMPACT.equals(format) &&
+					!IModelStore.IdType.Anonymous.equals(getIdType(tvStoredValue.getId()))) {
+				return new JsonPrimitive(tvStoredValue.getId());
 			} else {
-				return toJsonObject(documentUri, (TypedValue)storedValue, relationships);
+				return toJsonObject(documentUri, (TypedValue)storedValue, relationships, format);
 			}
 		} else if (storedValue instanceof Boolean) {
 			return new JsonPrimitive((Boolean)storedValue);
@@ -201,26 +228,32 @@ public class JsonStore extends InMemSpdxStore implements ISerializableModelStore
 	 * @param documentUri Document namespace or Uri
 	 * @param storedItem item to convert to a JsonObject
 	 * @param relationships List of any relationships found - these are added after the document
+	 * @param format Json Format - controls how much object are expanded or just referred to with ID's and references
 	 * @return JsonObject representation of the value
 	 * @throws InvalidSPDXAnalysisException
 	 */
-	private JsonObject toJsonObject(String documentUri, TypedValue storedItem, JsonArray relationships) throws InvalidSPDXAnalysisException {
+	private JsonObject toJsonObject(String documentUri, TypedValue storedItem, JsonArray relationships, JsonFormat format) throws InvalidSPDXAnalysisException {
+		Class<?> clazz = SpdxModelFactory.SPDX_TYPE_TO_CLASS.get(storedItem.getType());
+		JsonObject retval = new JsonObject();
+		if (SpdxElement.class.isAssignableFrom(clazz) && !IModelStore.IdType.Anonymous.equals(getIdType(storedItem.getId()))) {
+			retval.add(SpdxConstants.SPDX_IDENTIFIER, new JsonPrimitive(storedItem.getId()));
+		}
 		List<String> docPropNames = new ArrayList<String>(this.getPropertyValueNames(documentUri, storedItem.getId()));
 		docPropNames.sort(new PropertyComparator(storedItem.getType()));
-		JsonObject retval = new JsonObject();
 		for (String propertyName:docPropNames) {
 			if (SpdxConstants.PROP_RELATIONSHIP.equals(propertyName)) {
 				for (JsonElement relationship:toJsonRelationsip(documentUri, storedItem.getId(), getValueList(documentUri, storedItem.getId(), SpdxConstants.PROP_RELATIONSHIP))) {
 					relationships.add(relationship);
 				}
 			} else if (SpdxConstants.PROP_SPDX_EXTRACTED_LICENSES.equals(propertyName)) {
-				retval.add(propertyName, toExtractedLicensesJson(documentUri, storedItem.getId(), propertyName, relationships));
+				retval.add(propertyName, toExtractedLicensesJson(documentUri, storedItem.getId(), propertyName, relationships, format));
 			} else if (this.isCollectionProperty(documentUri, storedItem.getId(), propertyName)) {
-					retval.add(propertyName, toJsonArray(documentUri, this.getValueList(documentUri, storedItem.getId(), propertyName), relationships));
+					retval.add(propertyName, toJsonArray(documentUri, this.getValueList(documentUri, storedItem.getId(), propertyName), 
+							relationships, format));
 			} else {
 				Optional<Object> value = this.getValue(documentUri, storedItem.getId(), propertyName);
 				if (value.isPresent()) {
-					retval.add(propertyName, toJsonElement(documentUri, value.get(), relationships));
+					retval.add(propertyName, toJsonElement(documentUri, value.get(), relationships, format));
 				}
 			}
 		}
@@ -234,7 +267,8 @@ public class JsonStore extends InMemSpdxStore implements ISerializableModelStore
 	 * @return collection of JsonObjects representing the relationships
 	 * @throws InvalidSPDXAnalysisException
 	 */
-	private Collection<? extends JsonObject> toJsonRelationsip(String documentUri, String id, List<Object> valueList) throws InvalidSPDXAnalysisException {
+	private Collection<? extends JsonObject> toJsonRelationsip(String documentUri, String id, 
+			List<Object> valueList) throws InvalidSPDXAnalysisException {
 		ArrayList<JsonObject> retval = new ArrayList<>();
 		for (Object value:valueList) {
 			if (!(value instanceof TypedValue)) {
@@ -287,10 +321,12 @@ public class JsonStore extends InMemSpdxStore implements ISerializableModelStore
 	 * @param id document ID containing the extracted licenses
 	 * @param propertyName property name for the extracted licenses
 	 * @param relationships list of relationships - just so we can pass it to toJsonObject
+	 * @param format Json Format - controls how much object are expanded or just referred to with ID's and references
 	 * @return a Json array of extracted license elements
 	 * @throws InvalidSPDXAnalysisException
 	 */
-	private JsonElement toExtractedLicensesJson(String documentUri, String id, String propertyName, JsonArray relationships) throws InvalidSPDXAnalysisException {
+	private JsonElement toExtractedLicensesJson(String documentUri, String id, String propertyName, 
+			JsonArray relationships, JsonFormat format) throws InvalidSPDXAnalysisException {
 		JsonArray ja = new JsonArray();
 		List<Object> extractedLicenses = this.getValueList(documentUri, id, propertyName);
 		for (Object extractedLicense:extractedLicenses) {
@@ -298,7 +334,7 @@ public class JsonStore extends InMemSpdxStore implements ISerializableModelStore
 					(!SpdxConstants.CLASS_SPDX_EXTRACTED_LICENSING_INFO.equals(((TypedValue)extractedLicense).getType()))) {
 				throw new SpdxInvalidTypeException("Extracted License Infos not of type "+SpdxConstants.CLASS_SPDX_EXTRACTED_LICENSING_INFO);
 			}
-			ja.add(toJsonObject(documentUri, (TypedValue)extractedLicense, relationships));
+			ja.add(toJsonObject(documentUri, (TypedValue)extractedLicense, relationships, format));
 		}
 		return ja;
 	}
@@ -308,13 +344,14 @@ public class JsonStore extends InMemSpdxStore implements ISerializableModelStore
 	 * @param documentUri Document namespace or Uri
 	 * @param valueList list of values to convert
 	 * @param relationships running total of any relationships found - any relationships are added
+	 * @param format Json Format - controls how much object are expanded or just referred to with ID's and references
 	 * @return
 	 * @throws InvalidSPDXAnalysisException 
 	 */
-	private JsonArray toJsonArray(String documentUri, List<Object> valueList, JsonArray relationships) throws InvalidSPDXAnalysisException {
+	private JsonArray toJsonArray(String documentUri, List<Object> valueList, JsonArray relationships, JsonFormat format) throws InvalidSPDXAnalysisException {
 		JsonArray retval = new JsonArray();
 		for (Object value:valueList) {
-			retval.add(toJsonElement(documentUri, value, relationships));
+			retval.add(toJsonElement(documentUri, value, relationships, format));
 		}
 		return retval;
 	}
