@@ -371,6 +371,13 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 		ObjectNode retval = mapper.createObjectNode();
 		List<String> docPropNames = new ArrayList<String>(this.getPropertyValueNames(documentUri, storedItem.getId()));
 		docPropNames.sort(new PropertyComparator(storedItem.getType()));
+		//TODO - do we sort for all types or just for the document level?
+		//TODO: Add in the SPDX ID for SPDX Items
+		Class<?> clazz = SpdxModelFactory.SPDX_TYPE_TO_CLASS.get(storedItem.getType());
+		if (SpdxElement.class.isAssignableFrom(clazz) && 
+				IdType.SpdxId.equals(getIdType(storedItem.getId()))) {
+			retval.put("SPDXID", storedItem.getId());
+		}
 		for (String propertyName:docPropNames) {
 			if (SpdxConstants.PROP_RELATIONSHIP.equals(propertyName)) {
 				for (ObjectNode relationship:toJsonRelationships(documentUri, storedItem.getId(), getValueList(documentUri, storedItem.getId(), SpdxConstants.PROP_RELATIONSHIP))) {
