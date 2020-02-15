@@ -41,8 +41,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spdx.library.InvalidSPDXAnalysisException;
 import org.spdx.library.SpdxConstants;
+import org.spdx.library.model.ExternalDocumentRef;
 import org.spdx.library.model.ExternalSpdxElement;
 import org.spdx.library.model.IndividualUriValue;
+import org.spdx.library.model.ReferenceType;
+import org.spdx.library.model.SpdxDocument;
 import org.spdx.library.model.SpdxElement;
 import org.spdx.library.model.SpdxInvalidTypeException;
 import org.spdx.library.model.SpdxModelFactory;
@@ -397,7 +400,10 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 		Class<?> clazz = SpdxModelFactory.SPDX_TYPE_TO_CLASS.get(storedItem.getType());
 		if (SpdxElement.class.isAssignableFrom(clazz) && 
 				IdType.SpdxId.equals(getIdType(storedItem.getId()))) {
-			retval.put("SPDXID", storedItem.getId());
+			retval.put(SpdxConstants.SPDX_IDENTIFIER, storedItem.getId());
+		}
+		if (ExternalDocumentRef.class.isAssignableFrom(clazz)) {
+			retval.put(SpdxConstants.EXTERNAL_DOCUMENT_REF_IDENTIFIER, storedItem.getId());
 		}
 		for (String propertyName:docPropNames) {
 			if (SpdxConstants.PROP_RELATIONSHIP.equals(propertyName)) {
@@ -405,7 +411,12 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 					relationships.add(relationship);
 				}
 			} else if (SpdxConstants.PROP_SPDX_EXTRACTED_LICENSES.equals(propertyName)) {
-				retval.set(propertyName, toExtractedLicensesArrayNode(documentUri, storedItem.getId(), propertyName, relationships));
+				if (Format.XML.equals(format)) {
+					retval.set(propertyName, toExtractedLicensesArrayNode(documentUri, storedItem.getId(), propertyName, relationships));
+				} else {
+					retval.set(propertyNameToCollectionPropertyName(propertyName), 
+							toExtractedLicensesArrayNode(documentUri, storedItem.getId(), propertyName, relationships));
+				}
 			} else if (this.isCollectionProperty(documentUri, storedItem.getId(), propertyName)) {
 				ArrayNode valuesArray = toArrayNode(documentUri, this.getValueList(documentUri, storedItem.getId(), propertyName), 
 						relationships);
@@ -437,8 +448,7 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 		}
 	}
 	
-	@SuppressWarnings("unused")
-	private String collectionPropertyNameToPropertyName(String collectionPropertyName) {
+	public static String collectionPropertyNameToPropertyName(String collectionPropertyName) {
 		if (collectionPropertyName.endsWith("ies")) {
 			return collectionPropertyName.substring(0, collectionPropertyName.length()-3);
 		} else {
@@ -566,8 +576,13 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 	/* (non-Javadoc)
 	 * @see org.spdx.storage.ISerializableModelStore#deSerialize(java.io.InputStream, boolean)
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	public synchronized String deSerialize(InputStream stream, boolean overwrite) throws InvalidSPDXAnalysisException, IOException {
+		Objects.requireNonNull(stream, "Input stream must not be null");
+		if (this.verbose != Verbose.COMPACT) {
+			throw new InvalidSPDXAnalysisException("Only COMPACT verbose option is supported for deserialization");
+		}
 		JsonNode root = mapper.readTree(stream);
 		JsonNode doc = root.get("Document");
 		if (Objects.isNull(doc)) {
@@ -599,6 +614,7 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 			restoreObjectPropertyValues(documentNamespace, SpdxConstants.SPDX_DOCUMENT_ID, doc, spdxIdProperties);
 			// restore the packages
 			Map<String, TypedValue> addedElements = new HashMap<>();
+			addedElements.put("spdxDocument", new TypedValue(SpdxConstants.SPDX_DOCUMENT_ID, SpdxConstants.CLASS_SPDX_DOCUMENT));
 			restoreElements(documentNamespace, SpdxConstants.CLASS_SPDX_PACKAGE, 
 					doc.get(SpdxConstants.PROP_DOCUMENT_PACKAGES), addedElements, spdxIdProperties);
 			restoreElements(documentNamespace, SpdxConstants.CLASS_SPDX_FILE, 
@@ -608,19 +624,62 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 			// fix up the ID's
 			for (Entry<String, String> propertyToFix:spdxIdProperties.entrySet()) {
 				Optional<Object> idToReplace = this.getValue(documentNamespace, propertyToFix.getKey(), propertyToFix.getValue());
-				if (!idToReplace.isPresent() || !(idToReplace.get() instanceof String)) {
+				if (!idToReplace.isPresent()) {
 					throw new InvalidSPDXAnalysisException("Missing SPDX ID for "+propertyToFix.getKey() + " " + propertyToFix.getValue());
 				}
-				String spdxId = (String)idToReplace.get();
-				TypedValue fixedValue = addedElements.get(spdxId);
-				if (Objects.isNull(fixedValue)) {
-					throw new InvalidSPDXAnalysisException("No SPDX element found for SPDX ID "+spdxId);
+				if (idToReplace.get() instanceof Collection) {
+					for (Object spdxId:(Collection<Object>)(idToReplace.get())) {
+						if (!(spdxId instanceof String)) {
+							throw new InvalidSPDXAnalysisException("Can not replace the SPDX ID with value due to invalid type for "+propertyToFix.getKey() + " " + propertyToFix.getValue());
+						}
+						setValue(documentNamespace, propertyToFix.getKey(), propertyToFix.getValue(), idToObjectValue(documentNamespace, (String)spdxId, addedElements));
+					}
+					
+				} else {
+					if (!(idToReplace.get() instanceof String)) {
+						throw new InvalidSPDXAnalysisException("Can not replace the SPDX ID with value due to invalid type for "+propertyToFix.getKey() + " " + propertyToFix.getValue());
+					}
+					String spdxId = (String)idToReplace.get();
+					setValue(documentNamespace, propertyToFix.getKey(), propertyToFix.getValue(), idToObjectValue(documentNamespace, spdxId, addedElements));
 				}
-				setValue(documentNamespace, propertyToFix.getKey(), propertyToFix.getValue(), fixedValue);
 			}
 			return documentNamespace;
 		} finally {
 			this.leaveCriticalSection(lock);
+		}
+	}
+
+	/**
+	 * Convert an ID into the value object to be stored
+	 * @param documentNamespace
+	 * @param spdxId ID to be replaced by the actual object
+	 * @param addedElements SPDX elements added
+	 * @return
+	 * @throws InvalidSPDXAnalysisException 
+	 */
+	private Object idToObjectValue(String documentNamespace, String spdxId, Map<String, TypedValue> addedElements) throws InvalidSPDXAnalysisException {
+		TypedValue fixedValue = addedElements.get(spdxId);
+		if (Objects.isNull(fixedValue)) {
+			if (spdxId.startsWith("DocumentRef-")) {
+				final IModelStore modelStore = this;
+				IndividualUriValue spdxExternalElementRef = new IndividualUriValue() {
+
+					@Override
+					public String getIndividualURI() {
+						try {
+							return ExternalSpdxElement.externalSpdxElementIdToURI(spdxId, modelStore, documentNamespace, null);
+						} catch (InvalidSPDXAnalysisException e) {
+							throw new RuntimeException(e);
+						}
+					}
+					
+				};
+				return spdxExternalElementRef;
+			} else {
+				throw new InvalidSPDXAnalysisException("No SPDX element found for SPDX ID "+spdxId);
+			}
+		} else {
+			return fixedValue;
 		}
 	}
 
@@ -677,8 +736,7 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 			if (SKIPPED_PROPERTIES.contains(field.getKey())) {
 				continue;
 			}
-			setPropertyValueForJsonNode(documentUri, id, field.getKey(), field.getValue(), spdxIdProperties);
-			
+			setPropertyValueForJsonNode(documentUri, id, field.getKey(), field.getValue(), spdxIdProperties, false);
 		}
 	}
 
@@ -689,20 +747,34 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 	 * @param property property name
 	 * @param value JSON node containing the value
 	 * @param spdxIdProperties Properties which contain an SPDX ID which needs to be replaced
+	 * @param list true if this property is a list type
 	 * @throws InvalidSPDXAnalysisException
 	 */
 	private void setPropertyValueForJsonNode(String documentUri, String id, String property, JsonNode value,
-			Map<String, String> spdxIdProperties) throws InvalidSPDXAnalysisException {
+			Map<String, String> spdxIdProperties, boolean list) throws InvalidSPDXAnalysisException {
 		switch (value.getNodeType()) {
 		case ARRAY: {
 			Iterator<JsonNode> iter = value.elements();
 			while (iter.hasNext()) {
-				setPropertyValueForJsonNode(documentUri, id, property, iter.next(), spdxIdProperties);
+				String individualPropertyName = collectionPropertyNameToPropertyName(property);
+				setPropertyValueForJsonNode(documentUri, id, individualPropertyName, iter.next(), spdxIdProperties, true);
 			}
 		}; break;
-		case BOOLEAN: this.setValue(documentUri, id, property, value.asBoolean()); break;
+		case BOOLEAN: {
+			if (list) {
+				this.addValueToCollection(documentUri, id, property, value.asBoolean());
+			} else {
+				this.setValue(documentUri, id, property, value.asBoolean()); 
+			}
+		} break;
 		case NULL: break; // ignore
-		case NUMBER: this.setValue(documentUri, id, property, value.asInt()); break;
+		case NUMBER: {
+			if (list) {
+				this.addValueToCollection(documentUri, id, property, value.asInt());
+			} else {
+				this.setValue(documentUri, id, property, value.asInt()); 
+			}
+		} break;
 		case OBJECT: {
 			Optional<String> propertyType = SpdxJsonLDContext.getInstance().getType(property);
 			if (!propertyType.isPresent()) {
@@ -711,33 +783,84 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 			String objectId = findObjectIdInJsonObject(documentUri, value);
 			create(documentUri, objectId, propertyType.get());
 			restoreObjectPropertyValues(documentUri, objectId, value, spdxIdProperties);
-		}; break;
-		case STRING: {
-			Optional<String> propertyType = SpdxJsonLDContext.getInstance().getType(property);
-			if (propertyType.isPresent()) {
-				Class<?> clazz = SpdxModelFactory.SPDX_TYPE_TO_CLASS.get(propertyType.get());
-				if (AnyLicenseInfo.class.isAssignableFrom(clazz)) {
-					AnyLicenseInfo parsedLicense = LicenseInfoFactory.parseSPDXLicenseString(property, this, documentUri, null);
-					this.setValue(documentUri, id, property, new TypedValue(parsedLicense.getId(), parsedLicense.getType()));
-				} else {
-					this.setValue(documentUri, id, property, value.asText()); 
-					if (propertyType.isPresent() && !"String".equals(propertyType.get())) {
-						// This is an SPDX ID which needs to be replaced with the actual reference
-						spdxIdProperties.put(id, property);
-					}
-				}
+			if (list) {
+				this.addValueToCollection(documentUri, id, property, new TypedValue(objectId, propertyType.get()));
 			} else {
-				this.setValue(documentUri, id, property, value.asText()); 
-				if (propertyType.isPresent() && !"String".equals(propertyType.get())) {
-					// This is an SPDX ID which needs to be replaced with the actual reference
-					spdxIdProperties.put(id, property);
-				}
+				this.setValue(documentUri, id, property, new TypedValue(objectId, propertyType.get()));
 			}
 		}; break;
+		case STRING:
+			setStringPropertyValueForJsonNode(documentUri, id, property, value, spdxIdProperties, list); break;
 		case BINARY:
 		case MISSING:
 		case POJO:
 		default: throw new InvalidSPDXAnalysisException("Unsupported JSON node type: "+value.toString());
+		}
+	}
+
+	/**
+	 * Set the property value for a string JsonNode
+	 * @param documentUri document URI
+	 * @param id ID of the object to store the value
+	 * @param property property name
+	 * @param value JSON node containing the value
+	 * @param spdxIdProperties Properties which contain an SPDX ID which needs to be replaced
+	 * @param list true if this property is a list type
+	 * @throws InvalidSPDXAnalysisException
+	 */
+	private void setStringPropertyValueForJsonNode(String documentUri, String id, String property, JsonNode value,
+			Map<String, String> spdxIdProperties, boolean list) throws InvalidSPDXAnalysisException {
+		Optional<String> propertyType = SpdxJsonLDContext.getInstance().getType(property);
+		if (propertyType.isPresent()) {	
+			Class<?> clazz = SpdxModelFactory.SPDX_TYPE_TO_CLASS.get(propertyType.get());
+			if (AnyLicenseInfo.class.isAssignableFrom(clazz)) {
+				AnyLicenseInfo parsedLicense = LicenseInfoFactory.parseSPDXLicenseString(value.asText(), this, documentUri, null);
+				if (list) {
+					this.addValueToCollection(documentUri, id, property, new TypedValue(parsedLicense.getId(), parsedLicense.getType()));
+				} else {
+					this.setValue(documentUri, id, property, new TypedValue(parsedLicense.getId(), parsedLicense.getType()));
+				}				
+			} else if (SpdxDocument.class.isAssignableFrom(clazz) || ReferenceType.class.isAssignableFrom(clazz)) {
+				final String uriValue = value.asText();
+				IndividualUriValue individualUriValue = new IndividualUriValue() {
+
+					@Override
+					public String getIndividualURI() {
+						return uriValue;
+					}
+					
+				};
+				if (list) {
+					this.addValueToCollection(documentUri, id, property, individualUriValue);
+				} else {
+					this.setValue(documentUri, id, property, individualUriValue);
+				}
+			} else if (SpdxElement.class.isAssignableFrom(clazz)) {
+				if (list) {
+					this.addValueToCollection(documentUri, id, property, value.asText());
+				} else {
+					this.setValue(documentUri, id, property, value.asText());
+				}
+				spdxIdProperties.put(id, property);
+			} else if (clazz.isEnum()) {					
+				for (Object enumConst:clazz.getEnumConstants()) {
+					if (enumConst instanceof IndividualUriValue && value.asText().equals(enumConst.toString())) {
+						if (list) {
+							addValueToCollection(documentUri, id, property, enumConst);
+						} else {
+							setValue(documentUri, id, property, enumConst);
+						}
+					}
+				}
+			} else {
+				throw new InvalidSPDXAnalysisException("Unknown type: "+propertyType.get()+" for property "+property);
+			}
+		} else {
+			if (list) {
+				this.addValueToCollection(documentUri, id, property, value.asText()); 
+			} else {
+				this.setValue(documentUri, id, property, value.asText()); 
+			}
 		}
 	}
 
@@ -754,6 +877,9 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 		}
 		if (Objects.isNull(retval) || !retval.isTextual()) {
 			retval = jsonObject.get(SpdxConstants.PROP_LICENSE_EXCEPTION_ID);
+		}
+		if (Objects.isNull(retval) || !retval.isTextual()) {
+			retval = jsonObject.get(SpdxConstants.EXTERNAL_DOCUMENT_REF_IDENTIFIER);
 		}
 		if (Objects.isNull(retval) || !retval.isTextual()) {
 			return getNextId(IdType.Anonymous, documentUri);

@@ -27,7 +27,7 @@
     },
     "dataLicense" : {
       "@id" : "spdx:dataLicense",
-      "@type" : "spdx:File"
+      "@type" : "spdx:AnyLicenseInfo"
     },
     "member" : {
       "@id" : "rdfs:member"
@@ -412,6 +412,11 @@
     },
     "deprecatedClass" : {
       "@id" : "owl:deprecatedClass"
-    }
+    },
+    "Document" : {
+      "@type" : "spdx:SpdxDocument",
+      "@id" : "spdx:spdxDocument"
+    },
+    "SPDXID" : "@id"
   }
 }
