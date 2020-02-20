@@ -24,11 +24,18 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Optional;
 
 import org.spdx.jsonstore.MultiFormatStore.Format;
 import org.spdx.jsonstore.MultiFormatStore.Verbose;
 import org.spdx.library.InvalidSPDXAnalysisException;
 import org.spdx.library.model.SpdxDocument;
+import org.spdx.library.model.SpdxModelFactory;
+import org.spdx.library.model.SpdxSnippet;
+import org.spdx.library.model.pointer.SinglePointer;
+import org.spdx.library.model.pointer.StartEndPointer;
+import org.spdx.utility.compare.SpdxCompareException;
+import org.spdx.utility.compare.SpdxComparer;
 
 import junit.framework.TestCase;
 
@@ -58,8 +65,9 @@ public class MultiFormatStoreTest extends TestCase {
 	 * Test method for {@link org.spdx.jsonstore.MultiFormatStore#serialize(java.lang.String, java.io.OutputStream)} and {@link org.spdx.jsonstore.MultiFormatStore#deSerialize(java.io.InputStream)}.
 	 * @throws IOException 
 	 * @throws InvalidSPDXAnalysisException 
+	 * @throws SpdxCompareException 
 	 */
-	public void testDeSerializeSerializeJson() throws InvalidSPDXAnalysisException, IOException {
+	public void testDeSerializeSerializeJson() throws InvalidSPDXAnalysisException, IOException, SpdxCompareException {
 		File jsonFile = new File(JSON_FILE_PATH);
 		// Compact
 		MultiFormatStore inputStore = new MultiFormatStore(Format.JSON_PRETTY);
@@ -88,6 +96,30 @@ public class MultiFormatStoreTest extends TestCase {
 		SpdxDocument compareDocument = new SpdxDocument(outputStore, documentUri, null, false);
 		verify = inputDocument.verify();
 		assertEquals(0, verify.size());
+		verify = compareDocument.verify();
+		assertEquals(0, verify.size());
+		SpdxModelFactory.getElements(inputStore, documentUri, null, SpdxSnippet.class).forEach(element -> {
+			SpdxSnippet snippet = (SpdxSnippet)element;
+			try {
+				SinglePointer sp1 = snippet.getByteRange().getStartPointer();
+				SinglePointer sp2 = snippet.getByteRange().getEndPointer();
+				Optional<StartEndPointer> sep = snippet.getLineRange();
+				SinglePointer sp3 = null;
+				SinglePointer sp4 = null;
+				if (sep.isPresent()) {
+					sp3 = sep.get().getStartPointer();
+					sp4 = sep.get().getEndPointer();
+				}
+				List<String> sVerify = snippet.verify();
+//				assertEquals(0, sVerify.size());
+			} catch (InvalidSPDXAnalysisException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		});
+		SpdxComparer comparer = new SpdxComparer();
+		comparer.compare(inputDocument, compareDocument);
+		assertFalse(comparer.isDifferenceFound());
 		assertTrue(inputDocument.equivalent(compareDocument));
 	}
 

@@ -205,7 +205,7 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 	public synchronized void serialize(String documentUri, OutputStream stream) throws InvalidSPDXAnalysisException, IOException {
 		IModelStoreLock lock = this.enterCriticalSection(documentUri, false);	//TODO: True value causes deadlock due to false value in ExternalDocumentRef line 58
 		try {
-			TypedValue document = new TypedValue(SpdxConstants.SPDX_DOCUMENT_ID, SpdxConstants.CLASS_SPDX_DOCUMENT);		 
+			TypedValue document = new TypedValue(SpdxConstants.SPDX_DOCUMENT_ID, SpdxConstants.CLASS_SPDX_DOCUMENT);
 			ArrayNode relationships = mapper.createArrayNode();
 			ObjectNode doc = typedValueToObjectNode(documentUri, document, relationships);
 			doc.put(SpdxConstants.PROP_DOCUMENT_NAMESPACE, documentUri);
@@ -628,11 +628,17 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 					throw new InvalidSPDXAnalysisException("Missing SPDX ID for "+propertyToFix.getKey() + " " + propertyToFix.getValue());
 				}
 				if (idToReplace.get() instanceof Collection) {
+					Collection<Object> replacements = new HashSet<>();
 					for (Object spdxId:(Collection<Object>)(idToReplace.get())) {
 						if (!(spdxId instanceof String)) {
 							throw new InvalidSPDXAnalysisException("Can not replace the SPDX ID with value due to invalid type for "+propertyToFix.getKey() + " " + propertyToFix.getValue());
 						}
-						setValue(documentNamespace, propertyToFix.getKey(), propertyToFix.getValue(), idToObjectValue(documentNamespace, (String)spdxId, addedElements));
+						replacements.add(idToObjectValue(documentNamespace, (String)spdxId, addedElements));
+
+					}
+					clearValueCollection(documentNamespace, propertyToFix.getKey(), propertyToFix.getValue());
+					for (Object replacement:replacements) {
+						addValueToCollection(documentNamespace, propertyToFix.getKey(), propertyToFix.getValue(), replacement);
 					}
 					
 				} else {
@@ -779,6 +785,17 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 			Optional<String> propertyType = SpdxJsonLDContext.getInstance().getType(property);
 			if (!propertyType.isPresent()) {
 				throw new InvalidSPDXAnalysisException("Unknown type for property " + property);
+			}
+			if (SpdxConstants.CLASS_SINGLE_POINTER.equals(propertyType.get())) {
+				// need to determine whether a byte or line pointer type
+				// A bit of Duck Typing is in order
+				if (Objects.nonNull(value.get(SpdxConstants.PROP_POINTER_OFFSET))) {
+					propertyType = Optional.of(SpdxConstants.CLASS_POINTER_BYTE_OFFSET_POINTER);
+				} else if (Objects.nonNull(value.get(SpdxConstants.PROP_POINTER_LINE_NUMBER))) {
+					propertyType = Optional.of(SpdxConstants.CLASS_POINTER_LINE_CHAR_POINTER);
+				} else {
+					throw new InvalidSPDXAnalysisException("Can not determine type for snippet pointer");
+				}
 			}
 			String objectId = findObjectIdInJsonObject(documentUri, value);
 			create(documentUri, objectId, propertyType.get());
