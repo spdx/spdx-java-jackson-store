@@ -29,13 +29,18 @@ import java.util.Optional;
 import org.spdx.jsonstore.MultiFormatStore.Format;
 import org.spdx.jsonstore.MultiFormatStore.Verbose;
 import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.library.model.Relationship;
 import org.spdx.library.model.SpdxDocument;
+import org.spdx.library.model.SpdxFile;
 import org.spdx.library.model.SpdxModelFactory;
+import org.spdx.library.model.SpdxPackage;
 import org.spdx.library.model.SpdxSnippet;
 import org.spdx.library.model.pointer.SinglePointer;
 import org.spdx.library.model.pointer.StartEndPointer;
 import org.spdx.utility.compare.SpdxCompareException;
 import org.spdx.utility.compare.SpdxComparer;
+import org.spdx.utility.compare.SpdxFileDifference;
+import org.spdx.utility.compare.SpdxPackageComparer;
 
 import junit.framework.TestCase;
 
@@ -98,27 +103,11 @@ public class MultiFormatStoreTest extends TestCase {
 		assertEquals(0, verify.size());
 		verify = compareDocument.verify();
 		assertEquals(0, verify.size());
-		SpdxModelFactory.getElements(inputStore, documentUri, null, SpdxSnippet.class).forEach(element -> {
-			SpdxSnippet snippet = (SpdxSnippet)element;
-			try {
-				SinglePointer sp1 = snippet.getByteRange().getStartPointer();
-				SinglePointer sp2 = snippet.getByteRange().getEndPointer();
-				Optional<StartEndPointer> sep = snippet.getLineRange();
-				SinglePointer sp3 = null;
-				SinglePointer sp4 = null;
-				if (sep.isPresent()) {
-					sp3 = sep.get().getStartPointer();
-					sp4 = sep.get().getEndPointer();
-				}
-				List<String> sVerify = snippet.verify();
-//				assertEquals(0, sVerify.size());
-			} catch (InvalidSPDXAnalysisException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		});
 		SpdxComparer comparer = new SpdxComparer();
 		comparer.compare(inputDocument, compareDocument);
+		assertTrue(comparer.isfilesEquals());
+		assertTrue(comparer.isPackagesEquals());
+		assertTrue(comparer.isDocumentRelationshipsEquals());
 		assertFalse(comparer.isDifferenceFound());
 		assertTrue(inputDocument.equivalent(compareDocument));
 	}

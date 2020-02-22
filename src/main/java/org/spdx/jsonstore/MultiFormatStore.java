@@ -45,11 +45,13 @@ import org.spdx.library.model.ExternalDocumentRef;
 import org.spdx.library.model.ExternalSpdxElement;
 import org.spdx.library.model.IndividualUriValue;
 import org.spdx.library.model.ReferenceType;
+import org.spdx.library.model.SimpleUriValue;
 import org.spdx.library.model.SpdxDocument;
 import org.spdx.library.model.SpdxElement;
 import org.spdx.library.model.SpdxInvalidTypeException;
 import org.spdx.library.model.SpdxModelFactory;
 import org.spdx.library.model.TypedValue;
+import org.spdx.library.model.enumerations.RelationshipType;
 import org.spdx.library.model.enumerations.SpdxEnumFactory;
 import org.spdx.library.model.license.AnyLicenseInfo;
 import org.spdx.library.model.license.LicenseInfoFactory;
@@ -97,7 +99,7 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 	 */
 	static final Set<String> SKIPPED_PROPERTIES = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(new String[] {
 			SpdxConstants.PROP_DOCUMENT_DESCRIBES, SpdxConstants.PROP_DOCUMENT_PACKAGES, SpdxConstants.PROP_DOCUMENT_FILES,
-			SpdxConstants.PROP_DOCUMENT_SNIPPETS, SpdxConstants.SPDX_IDENTIFIER
+			SpdxConstants.PROP_DOCUMENT_SNIPPETS, SpdxConstants.SPDX_IDENTIFIER, SpdxConstants.PROP_DOCUMENT_RELATIONSHIPS
 	})));
 	
 	static final Logger logger = LoggerFactory.getLogger(MultiFormatStore.class);
@@ -443,6 +445,8 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 	public static String propertyNameToCollectionPropertyName(String propertyName) {
 		if (propertyName.endsWith("y")) {
 			return propertyName.substring(0, propertyName.length()-1) + "ies";
+		} else if (SpdxConstants.PROP_PACKAGE_LICENSE_INFO_FROM_FILES.equals(propertyName)) {
+			return propertyName;
 		} else {
 			return propertyName + "s";
 		}
@@ -451,6 +455,8 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 	public static String collectionPropertyNameToPropertyName(String collectionPropertyName) {
 		if (collectionPropertyName.endsWith("ies")) {
 			return collectionPropertyName.substring(0, collectionPropertyName.length()-3);
+		} else if (SpdxConstants.PROP_PACKAGE_LICENSE_INFO_FROM_FILES.equals(collectionPropertyName)) {
+			return collectionPropertyName;
 		} else {
 			return collectionPropertyName.substring(0, collectionPropertyName.length()-1);
 		}
@@ -614,13 +620,15 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 			restoreObjectPropertyValues(documentNamespace, SpdxConstants.SPDX_DOCUMENT_ID, doc, spdxIdProperties);
 			// restore the packages
 			Map<String, TypedValue> addedElements = new HashMap<>();
-			addedElements.put("spdxDocument", new TypedValue(SpdxConstants.SPDX_DOCUMENT_ID, SpdxConstants.CLASS_SPDX_DOCUMENT));
+			addedElements.put(SpdxConstants.SPDX_DOCUMENT_ID, new TypedValue(SpdxConstants.SPDX_DOCUMENT_ID, SpdxConstants.CLASS_SPDX_DOCUMENT));
 			restoreElements(documentNamespace, SpdxConstants.CLASS_SPDX_PACKAGE, 
 					doc.get(SpdxConstants.PROP_DOCUMENT_PACKAGES), addedElements, spdxIdProperties);
 			restoreElements(documentNamespace, SpdxConstants.CLASS_SPDX_FILE, 
 					doc.get(SpdxConstants.PROP_DOCUMENT_FILES), addedElements, spdxIdProperties);
 			restoreElements(documentNamespace, SpdxConstants.CLASS_SPDX_SNIPPET, 
 					doc.get(SpdxConstants.PROP_DOCUMENT_SNIPPETS), addedElements, spdxIdProperties);
+			restoreRelationships(documentNamespace, doc.get(SpdxConstants.PROP_DOCUMENT_RELATIONSHIPS),
+					addedElements);
 			// fix up the ID's
 			for (Entry<String, String> propertyToFix:spdxIdProperties.entrySet()) {
 				Optional<Object> idToReplace = this.getValue(documentNamespace, propertyToFix.getKey(), propertyToFix.getValue());
@@ -723,6 +731,61 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 			create(documentUri, id, type);
 			restoreObjectPropertyValues(documentUri, id, element, spdxIdProperties);
 			addedElements.put(id, new TypedValue(id, type));
+		}
+	}
+	
+
+	/**
+	 * Restore the relationships adding them as properites to the correct elements
+	 * @param documentNamespace
+	 * @param jsonNode
+	 * @param addedElements
+	 * @throws InvalidSPDXAnalysisException 
+	 */
+	private void restoreRelationships(String documentNamespace, JsonNode jsonNode,
+			Map<String, TypedValue> addedElements) throws InvalidSPDXAnalysisException {
+		if (Objects.isNull(jsonNode)) {
+			return;
+		}
+		if (!jsonNode.isArray()) {
+			throw new InvalidSPDXAnalysisException("Relationships are expected to be in an array for type Relationship");
+		}
+		Iterator<JsonNode> iter = jsonNode.elements();
+		while (iter.hasNext()) {
+			JsonNode relationship = iter.next();
+			JsonNode elementIdNode = relationship.get(SpdxConstants.PROP_SPDX_ELEMENTID);
+			if (Objects.isNull(elementIdNode) || !elementIdNode.isTextual()) {
+				throw new InvalidSPDXAnalysisException("Missing SPDX element ID");
+			}
+			TypedValue element = addedElements.get(elementIdNode.asText());
+			if (Objects.isNull(element)) {
+				throw new InvalidSPDXAnalysisException("Missing SPDX element for ID "+elementIdNode.asText());
+			}
+			JsonNode relationshipTypeNode = relationship.get(SpdxConstants.PROP_RELATIONSHIP_TYPE);
+			if (Objects.isNull(relationshipTypeNode) || !relationshipTypeNode.isTextual()) {
+				throw new InvalidSPDXAnalysisException("Missing required relationship type");
+			}
+			String relationshipTypeUri = null;
+			try {
+				relationshipTypeUri = RelationshipType.valueOf(relationshipTypeNode.asText()).getIndividualURI();
+			} catch(Exception ex) {
+				throw new InvalidSPDXAnalysisException("Unknown relationship type: "+relationshipTypeNode.asText());
+			}
+			SimpleUriValue relationshipType = new SimpleUriValue(relationshipTypeUri);
+			JsonNode relatedElementNode = relationship.get(SpdxConstants.PROP_RELATED_SPDX_ELEMENT);
+			if (Objects.isNull(relatedElementNode) || !relatedElementNode.isTextual()) {
+				throw new InvalidSPDXAnalysisException("Missing required related element");
+			}
+			Object relatedElement = idToObjectValue(documentNamespace, relatedElementNode.asText(), addedElements);
+			if (Objects.isNull(relatedElement)) {
+				throw new InvalidSPDXAnalysisException("Missing SPDX element for ID "+relatedElementNode.asText());
+			}
+			String relationshipId = getNextId(IdType.Anonymous, documentNamespace);
+			create(documentNamespace, relationshipId, SpdxConstants.CLASS_RELATIONSHIP);
+			setValue(documentNamespace, relationshipId, SpdxConstants.PROP_RELATIONSHIP_TYPE, relationshipType);
+			setValue(documentNamespace, relationshipId, SpdxConstants.PROP_RELATED_SPDX_ELEMENT, relatedElement);
+			addValueToCollection(documentNamespace, element.getId(), SpdxConstants.PROP_RELATIONSHIP, 
+					new TypedValue(relationshipId, SpdxConstants.CLASS_RELATIONSHIP));
 		}
 	}
 
@@ -828,8 +891,11 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 	private void setStringPropertyValueForJsonNode(String documentUri, String id, String property, JsonNode value,
 			Map<String, String> spdxIdProperties, boolean list) throws InvalidSPDXAnalysisException {
 		Optional<String> propertyType = SpdxJsonLDContext.getInstance().getType(property);
-		if (propertyType.isPresent()) {	
-			Class<?> clazz = SpdxModelFactory.SPDX_TYPE_TO_CLASS.get(propertyType.get());
+		Class<?> clazz = null;
+		if (propertyType.isPresent()) {
+			clazz = SpdxModelFactory.SPDX_TYPE_TO_CLASS.get(propertyType.get());
+		}
+		if (Objects.nonNull(clazz)) {
 			if (AnyLicenseInfo.class.isAssignableFrom(clazz)) {
 				AnyLicenseInfo parsedLicense = LicenseInfoFactory.parseSPDXLicenseString(value.asText(), this, documentUri, null);
 				if (list) {
@@ -862,10 +928,11 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 			} else if (clazz.isEnum()) {					
 				for (Object enumConst:clazz.getEnumConstants()) {
 					if (enumConst instanceof IndividualUriValue && value.asText().equals(enumConst.toString())) {
+						IndividualUriValue iuv = new SimpleUriValue((IndividualUriValue)enumConst);
 						if (list) {
-							addValueToCollection(documentUri, id, property, enumConst);
+							addValueToCollection(documentUri, id, property, iuv);
 						} else {
-							setValue(documentUri, id, property, enumConst);
+							setValue(documentUri, id, property, iuv);
 						}
 					}
 				}
