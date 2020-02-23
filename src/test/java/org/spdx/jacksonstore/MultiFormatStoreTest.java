@@ -15,7 +15,7 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-package org.spdx.jsonstore;
+package org.spdx.jacksonstore;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -23,11 +23,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import org.spdx.jsonstore.MultiFormatStore.Format;
-import org.spdx.jsonstore.MultiFormatStore.Verbose;
+import org.spdx.jacksonstore.MultiFormatStore;
+import org.spdx.jacksonstore.MultiFormatStore.Format;
+import org.spdx.jacksonstore.MultiFormatStore.Verbose;
 import org.spdx.library.InvalidSPDXAnalysisException;
 import org.spdx.library.model.Relationship;
 import org.spdx.library.model.SpdxDocument;
@@ -67,14 +69,13 @@ public class MultiFormatStoreTest extends TestCase {
 	}
 
 	/**
-	 * Test method for {@link org.spdx.jsonstore.MultiFormatStore#serialize(java.lang.String, java.io.OutputStream)} and {@link org.spdx.jsonstore.MultiFormatStore#deSerialize(java.io.InputStream)}.
+	 * Test method for {@link org.spdx.jacksonstore.MultiFormatStore#serialize(java.lang.String, java.io.OutputStream)} and {@link org.spdx.jacksonstore.MultiFormatStore#deSerialize(java.io.InputStream)}.
 	 * @throws IOException 
 	 * @throws InvalidSPDXAnalysisException 
 	 * @throws SpdxCompareException 
 	 */
 	public void testDeSerializeSerializeJson() throws InvalidSPDXAnalysisException, IOException, SpdxCompareException {
 		File jsonFile = new File(JSON_FILE_PATH);
-		// Compact
 		MultiFormatStore inputStore = new MultiFormatStore(Format.JSON_PRETTY);
 		try (InputStream input = new FileInputStream(jsonFile)) {
 			inputStore.deSerialize(input, false);
@@ -97,6 +98,71 @@ public class MultiFormatStoreTest extends TestCase {
 		inputStore.serialize(documentUri, outputStream);
 		ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
 		MultiFormatStore outputStore = new MultiFormatStore(Format.JSON_PRETTY);
+		outputStore.deSerialize(inputStream, false);
+		SpdxDocument compareDocument = new SpdxDocument(outputStore, documentUri, null, false);
+		verify = inputDocument.verify();
+		assertEquals(0, verify.size());
+		verify = compareDocument.verify();
+		assertEquals(0, verify.size());
+		SpdxComparer comparer = new SpdxComparer();
+		comparer.compare(inputDocument, compareDocument);
+		assertTrue(comparer.isfilesEquals());
+		assertTrue(comparer.isPackagesEquals());
+		assertTrue(comparer.isDocumentRelationshipsEquals());
+		assertFalse(comparer.isDifferenceFound());
+		assertTrue(inputDocument.equivalent(compareDocument));
+	}
+	
+	public void testDeSerializeSerializeYaml() throws InvalidSPDXAnalysisException, IOException, SpdxCompareException {
+		File jsonFile = new File(JSON_FILE_PATH);
+		MultiFormatStore inputStore = new MultiFormatStore(Format.JSON_PRETTY);
+		try (InputStream input = new FileInputStream(jsonFile)) {
+			inputStore.deSerialize(input, false);
+		}
+		String documentUri = inputStore.getDocumentUris().get(0);
+		SpdxDocument inputDocument = new SpdxDocument(inputStore, documentUri, null, false);
+		List<String> verify = inputDocument.verify();
+		assertEquals(0, verify.size());
+		
+		// Deserialize
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		inputStore.setFormat(Format.YAML);
+		inputStore.serialize(documentUri, outputStream);
+		ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
+		MultiFormatStore outputStore = new MultiFormatStore(Format.YAML);
+		outputStore.deSerialize(inputStream, false);
+		SpdxDocument compareDocument = new SpdxDocument(outputStore, documentUri, null, false);
+		verify = inputDocument.verify();
+		assertEquals(0, verify.size());
+		verify = compareDocument.verify();
+		assertEquals(0, verify.size());
+		SpdxComparer comparer = new SpdxComparer();
+		comparer.compare(inputDocument, compareDocument);
+		assertTrue(comparer.isfilesEquals());
+		assertTrue(comparer.isPackagesEquals());
+		assertTrue(comparer.isDocumentRelationshipsEquals());
+		assertFalse(comparer.isDifferenceFound());
+		assertTrue(inputDocument.equivalent(compareDocument));
+	}
+	
+	public void testDeSerializeSerializeXml() throws InvalidSPDXAnalysisException, IOException, SpdxCompareException {
+		File jsonFile = new File(JSON_FILE_PATH);
+		MultiFormatStore inputStore = new MultiFormatStore(Format.JSON_PRETTY);
+		try (InputStream input = new FileInputStream(jsonFile)) {
+			inputStore.deSerialize(input, false);
+		}
+		String documentUri = inputStore.getDocumentUris().get(0);
+		SpdxDocument inputDocument = new SpdxDocument(inputStore, documentUri, null, false);
+		List<String> verify = inputDocument.verify();
+		assertEquals(0, verify.size());
+		
+		// Deserialize
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		inputStore.setFormat(Format.XML);
+		inputStore.serialize(documentUri, outputStream);
+		String temp = new String(outputStream.toByteArray());
+		ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
+		MultiFormatStore outputStore = new MultiFormatStore(Format.XML);
 		outputStore.deSerialize(inputStream, false);
 		SpdxDocument compareDocument = new SpdxDocument(outputStore, documentUri, null, false);
 		verify = inputDocument.verify();

@@ -15,7 +15,7 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-package org.spdx.jsonstore;
+package org.spdx.jacksonstore;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -122,6 +122,7 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 	static final ObjectMapper JSON_MAPPER = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
 	static final ObjectMapper XML_MAPPER = new XmlMapper().configure(ToXmlGenerator.Feature.WRITE_XML_DECLARATION, true).enable(SerializationFeature.INDENT_OUTPUT);
 	static final YAMLFactory yamlFactory = new YAMLFactory();
+	static final ObjectMapper YAML_MAPPER = new ObjectMapper(yamlFactory);
 	static final XmlFactory xmlFactory = new XmlFactory();
 	
 	private ObjectMapper mapper;
@@ -145,6 +146,7 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 	private void setMapper() {
 		switch (format) {
 		case XML: mapper = XML_MAPPER; break;
+		case YAML: mapper = YAML_MAPPER; break;
 		case JSON: 
 		case JSON_PRETTY: 
 		default: mapper = JSON_MAPPER;
@@ -176,6 +178,7 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 	public synchronized void setFormat(Format format) {
 		Objects.requireNonNull(format);
 		this.format = format;
+		setMapper();
 	}
 
 
@@ -590,7 +593,12 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 			throw new InvalidSPDXAnalysisException("Only COMPACT verbose option is supported for deserialization");
 		}
 		JsonNode root = mapper.readTree(stream);
-		JsonNode doc = root.get("Document");
+		JsonNode doc;
+		if (Format.XML.equals(format)) {
+			doc = root;
+		} else {
+			doc  = root.get("Document");
+		}
 		if (Objects.isNull(doc)) {
 			throw new InvalidSPDXAnalysisException("Missing SPDX Document");
 		}
