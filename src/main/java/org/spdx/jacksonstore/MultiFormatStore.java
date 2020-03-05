@@ -19,11 +19,13 @@ package org.spdx.jacksonstore;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-
+import org.json.JSONObject;
+import org.json.XML;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spdx.library.InvalidSPDXAnalysisException;
@@ -75,7 +77,8 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 	static final ObjectMapper YAML_MAPPER = new ObjectMapper(yamlFactory);
 	static final XmlFactory xmlFactory = new XmlFactory();
 	
-	private ObjectMapper mapper;
+	private ObjectMapper outputMapper;
+	private ObjectMapper inputMapper;
 	
 	/**
 	 * @param format Format - XML, JSON or YAML
@@ -95,11 +98,11 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 	 */
 	private void setMapper() {
 		switch (format) {
-		case XML: mapper = XML_MAPPER; break;
-		case YAML: mapper = YAML_MAPPER; break;
+		case XML: outputMapper = XML_MAPPER; inputMapper = JSON_MAPPER; break;
+		case YAML: outputMapper = YAML_MAPPER; inputMapper = YAML_MAPPER; break;
 		case JSON: 
 		case JSON_PRETTY: 
-		default: mapper = JSON_MAPPER;
+		default: outputMapper = JSON_MAPPER; inputMapper = JSON_MAPPER;
 		}
 	}
 	
@@ -158,7 +161,7 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 	 */
 	@Override
 	public synchronized void serialize(String documentUri, OutputStream stream) throws InvalidSPDXAnalysisException, IOException {
-		JacksonSerializer serializer = new JacksonSerializer(mapper, format, verbose, this);
+		JacksonSerializer serializer = new JacksonSerializer(outputMapper, format, verbose, this);
 		ObjectNode output = serializer.docToJsonNode(documentUri);
 		JsonGenerator jgen;
 		switch (format) {
@@ -167,21 +170,21 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 				break;
 			}
 			case XML: {
-				jgen = mapper.getFactory().createGenerator(stream).useDefaultPrettyPrinter(); 
+				jgen = outputMapper.getFactory().createGenerator(stream).useDefaultPrettyPrinter(); 
 				break;
 			}
 			case JSON: {
-				jgen = mapper.getFactory().createGenerator(stream);
+				jgen = outputMapper.getFactory().createGenerator(stream);
 				break;
 			}
 			case JSON_PRETTY:
 			default:  {
-				jgen = mapper.getFactory().createGenerator(stream).useDefaultPrettyPrinter(); 
+				jgen = outputMapper.getFactory().createGenerator(stream).useDefaultPrettyPrinter(); 
 				break;
 			}
 		}
 		try {
-			mapper.writeTree(jgen, output);
+			outputMapper.writeTree(jgen, output);
 		} finally {
 			jgen.close();
 		}
@@ -203,7 +206,7 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 	
 	public static String collectionPropertyNameToPropertyName(String collectionPropertyName) {
 		if (collectionPropertyName.endsWith("ies")) {
-			return collectionPropertyName.substring(0, collectionPropertyName.length()-3);
+			return collectionPropertyName.substring(0, collectionPropertyName.length()-3) + "y";
 		} else if (SpdxConstants.PROP_PACKAGE_LICENSE_INFO_FROM_FILES.equals(collectionPropertyName)) {
 			return collectionPropertyName;
 		} else {
@@ -220,12 +223,13 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 		if (this.verbose != Verbose.COMPACT) {
 			throw new InvalidSPDXAnalysisException("Only COMPACT verbose option is supported for deserialization");
 		}
-		JsonNode root = mapper.readTree(stream);
 		JsonNode doc;
 		if (Format.XML.equals(format)) {
-			doc = root;
+			// Jackson XML mapper does not support deserializing collections or arrays.  Use Json-In-Java to convert to JSON
+			JSONObject jo = XML.toJSONObject(new InputStreamReader(stream));
+			doc = inputMapper.readTree(jo.toString()).get("Document");
 		} else {
-			doc  = root.get("Document");
+			doc  = inputMapper.readTree(stream).get("Document");
 		}
 		if (Objects.isNull(doc)) {
 			throw new InvalidSPDXAnalysisException("Missing SPDX Document");
@@ -254,7 +258,7 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 		} finally {
 			this.leaveCriticalSection(lock);
 		}
-		JacksonDeSerializer deSerializer = new JacksonDeSerializer(this);
+		JacksonDeSerializer deSerializer = new JacksonDeSerializer(this, format);
 		deSerializer.storeDocument(documentNamespace, doc);	
 		return documentNamespace;
 

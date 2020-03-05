@@ -172,6 +172,9 @@ public class MultiFormatStoreTest extends TestCase {
 		SpdxComparer comparer = new SpdxComparer();
 		comparer.compare(inputDocument, compareDocument);
 		assertTrue(comparer.isfilesEquals());
+		List<SpdxPackage> unique = comparer.getUniquePackages(0, 1);
+		unique = comparer.getUniquePackages(1, 0);
+		List<SpdxPackageComparer> differences = comparer.getPackageDifferences();
 		assertTrue(comparer.isPackagesEquals());
 		assertTrue(comparer.isDocumentRelationshipsEquals());
 		assertFalse(comparer.isDifferenceFound());

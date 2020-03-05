@@ -19,6 +19,7 @@ package org.spdx.jacksonstore;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -174,25 +175,17 @@ public class JacksonSerializer {
 		}
 		for (String propertyName:docPropNames) {
 			if (SpdxConstants.PROP_RELATIONSHIP.equals(propertyName)) {
-				for (ObjectNode relationship:toJsonRelationships(documentUri, storedItem.getId(), store.getValueList(documentUri, storedItem.getId(), SpdxConstants.PROP_RELATIONSHIP))) {
+				for (ObjectNode relationship:toJsonRelationships(documentUri, storedItem.getId(), store.listValues(documentUri, storedItem.getId(), SpdxConstants.PROP_RELATIONSHIP))) {
 					relationships.add(relationship);
 				}
 			} else if (SpdxConstants.PROP_SPDX_EXTRACTED_LICENSES.equals(propertyName)) {
-				if (Format.XML.equals(format)) {
-					retval.set(propertyName, toExtractedLicensesArrayNode(documentUri, storedItem.getId(), propertyName, relationships));
-				} else {
-					retval.set(MultiFormatStore.propertyNameToCollectionPropertyName(propertyName), 
-							toExtractedLicensesArrayNode(documentUri, storedItem.getId(), propertyName, relationships));
-				}
+				retval.set(MultiFormatStore.propertyNameToCollectionPropertyName(propertyName), 
+						toExtractedLicensesArrayNode(documentUri, storedItem.getId(), propertyName, relationships));
 			} else if (store.isCollectionProperty(documentUri, storedItem.getId(), propertyName)) {
-				ArrayNode valuesArray = toArrayNode(documentUri, store.getValueList(documentUri, storedItem.getId(), propertyName), 
+				ArrayNode valuesArray = toArrayNode(documentUri, store.listValues(documentUri, storedItem.getId(), propertyName), 
 						relationships);
-				if (Format.XML.equals(format)) {
-					retval.set(propertyName, valuesArray);
-				} else {
-					retval.set(MultiFormatStore.propertyNameToCollectionPropertyName(propertyName), 
-							valuesArray);
-				}
+				retval.set(MultiFormatStore.propertyNameToCollectionPropertyName(propertyName), 
+						valuesArray);
 			} else {
 				Optional<Object> value = store.getValue(documentUri, storedItem.getId(), propertyName);
 				if (value.isPresent()) {
@@ -258,8 +251,9 @@ public class JacksonSerializer {
 	private ArrayNode toExtractedLicensesArrayNode(String documentUri, String id, String propertyName,
 			ArrayNode relationships) throws InvalidSPDXAnalysisException {
 		ArrayNode retval = mapper.createArrayNode();
-		List<Object> extractedLicenses = store.getValueList(documentUri, id, propertyName);
-		for (Object extractedLicense:extractedLicenses) {
+		Iterator<Object> extractedLicenses = store.listValues(documentUri, id, propertyName);
+		while (extractedLicenses.hasNext()) {
+			Object extractedLicense = extractedLicenses.next();
 			if (!(extractedLicense instanceof TypedValue) || 
 					(!SpdxConstants.CLASS_SPDX_EXTRACTED_LICENSING_INFO.equals(((TypedValue)extractedLicense).getType()))) {
 				throw new SpdxInvalidTypeException("Extracted License Infos not of type "+SpdxConstants.CLASS_SPDX_EXTRACTED_LICENSING_INFO);
@@ -277,9 +271,10 @@ public class JacksonSerializer {
 	 * @throws InvalidSPDXAnalysisException
 	 */
 	private Collection<? extends ObjectNode> toJsonRelationships(String documentUri, String id, 
-			List<Object> valueList) throws InvalidSPDXAnalysisException {
+			Iterator<Object> valueList) throws InvalidSPDXAnalysisException {
 		ArrayList<ObjectNode> retval = new ArrayList<>();
-		for (Object value:valueList) {
+		while (valueList.hasNext()) {
+			Object value = valueList.next();
 			if (!(value instanceof TypedValue)) {
 				throw new SpdxInvalidTypeException("Expected relationship type, value list element was of type "+value.getClass().toString());
 			}
@@ -331,9 +326,10 @@ public class JacksonSerializer {
 	 * @return
 	 * @throws InvalidSPDXAnalysisException 
 	 */
-	private ArrayNode toArrayNode(String documentUri, List<Object> valueList, ArrayNode relationships) throws InvalidSPDXAnalysisException {
+	private ArrayNode toArrayNode(String documentUri, Iterator<Object> valueList, ArrayNode relationships) throws InvalidSPDXAnalysisException {
 		ArrayNode retval = mapper.createArrayNode();
-		for (Object value:valueList) {
+		while (valueList.hasNext()) {
+			Object value = valueList.next();
 			addValueToArrayNode(retval, documentUri, value, relationships);
 		}
 		return retval;

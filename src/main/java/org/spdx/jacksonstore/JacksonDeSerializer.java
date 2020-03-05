@@ -31,10 +31,12 @@ import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
+import org.spdx.jacksonstore.MultiFormatStore.Format;
 import org.spdx.library.InvalidSPDXAnalysisException;
 import org.spdx.library.SpdxConstants;
 import org.spdx.library.model.ExternalSpdxElement;
 import org.spdx.library.model.IndividualUriValue;
+import org.spdx.library.model.ModelStorageClassConverter;
 import org.spdx.library.model.ReferenceType;
 import org.spdx.library.model.SimpleUriValue;
 import org.spdx.library.model.SpdxDocument;
@@ -49,6 +51,7 @@ import org.spdx.storage.IModelStore.IModelStoreLock;
 import org.spdx.storage.IModelStore.IdType;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeType;
 
 /**
  * Converts a Jackson node for a document to a stored document in a model store
@@ -67,13 +70,17 @@ public class JacksonDeSerializer {
 	})));
 
 	private IModelStore store;
+	@SuppressWarnings("unused")
+	private Format format;
 
 	/**
 	 * @param store store to store any documents in
 	 */
-	public JacksonDeSerializer(IModelStore store) {
+	public JacksonDeSerializer(IModelStore store, Format format) {
 		Objects.requireNonNull(store, "Model store can not be null");
+		Objects.requireNonNull(format, "Format can not be null");
 		this.store = store;
+		this.format = format;
 	}
 
 	/**
@@ -134,6 +141,39 @@ public class JacksonDeSerializer {
 			store.leaveCriticalSection(lock);
 		}
 	}
+	
+	/**
+	 * Restores a single SPDX element of a specific type
+	 * @param documentUri
+	 * @param type
+	 * @param jsonNode
+	 * @param addedElements
+	 * @param spdxIdProperties Properties which contain an SPDX ID which needs to be replaced
+	 * @throws InvalidSPDXAnalysisException
+	 */
+	private void restoreElement(String documentUri, String type, @Nullable JsonNode jsonNode,
+			Map<String, TypedValue> addedElements, Map<String, String> spdxIdProperties) throws InvalidSPDXAnalysisException {
+		if (Objects.isNull(jsonNode)) {
+			return;
+		}
+		if (!jsonNode.isObject()) {
+			throw new InvalidSPDXAnalysisException("Invalid JSON node type for SPDX element");
+		}
+		JsonNode idNode = jsonNode.get(SpdxConstants.SPDX_IDENTIFIER);
+		if (Objects.isNull(idNode) || !idNode.isTextual()) {
+			throw new InvalidSPDXAnalysisException("Missing SPDX ID");
+		}
+		String id = idNode.asText();
+		if (Objects.isNull(id) || id.isEmpty()) {
+			throw new InvalidSPDXAnalysisException("Missing SPDX ID");
+		}
+		if (addedElements.containsKey(id)) {
+			throw new InvalidSPDXAnalysisException("Duplicate SPDX ID: "+id);
+		}
+		store.create(documentUri, id, type);
+		restoreObjectPropertyValues(documentUri, id, jsonNode, spdxIdProperties);
+		addedElements.put(id, new TypedValue(id, type));
+	}
 
 	/**
 	 * Restores SPDX elements of a specific type
@@ -149,26 +189,14 @@ public class JacksonDeSerializer {
 		if (Objects.isNull(jsonNode)) {
 			return;
 		}
-		if (!jsonNode.isArray()) {
-			throw new InvalidSPDXAnalysisException("Elements are expected to be in an array for type "+type);
-		}
-		Iterator<JsonNode> iter = jsonNode.elements();
-		while (iter.hasNext()) {
-			JsonNode element = iter.next();
-			JsonNode idNode = element.get(SpdxConstants.SPDX_IDENTIFIER);
-			if (Objects.isNull(idNode) || !idNode.isTextual()) {
-				throw new InvalidSPDXAnalysisException("Missing SPDX ID");
+		if (jsonNode.isArray()) {
+			Iterator<JsonNode> iter = jsonNode.elements();
+			while (iter.hasNext()) {
+				restoreElement(documentUri, type, iter.next(), addedElements, spdxIdProperties);
 			}
-			String id = idNode.asText();
-			if (Objects.isNull(id) || id.isEmpty()) {
-				throw new InvalidSPDXAnalysisException("Missing SPDX ID");
-			}
-			if (addedElements.containsKey(id)) {
-				throw new InvalidSPDXAnalysisException("Duplicate SPDX ID: "+id);
-			}
-			store.create(documentUri, id, type);
-			restoreObjectPropertyValues(documentUri, id, element, spdxIdProperties);
-			addedElements.put(id, new TypedValue(id, type));
+		} else {
+			// This can occur if there is only a single element in an XML document
+			restoreElement(documentUri, type, jsonNode, addedElements, spdxIdProperties);
 		}
 	}
 	
@@ -259,31 +287,79 @@ public class JacksonDeSerializer {
 	 */
 	private void setPropertyValueForJsonNode(String documentUri, String id, String property, JsonNode value,
 			Map<String, String> spdxIdProperties, boolean list) throws InvalidSPDXAnalysisException {
-		switch (value.getNodeType()) {
-		case ARRAY: {
+		if (SpdxJsonLDContext.getInstance().isList(property)) {
+			list = true;
+		}if (JsonNodeType.ARRAY.equals(value.getNodeType())) {
 			Iterator<JsonNode> iter = value.elements();
 			while (iter.hasNext()) {
-				String individualPropertyName = MultiFormatStore.collectionPropertyNameToPropertyName(property);
-				setPropertyValueForJsonNode(documentUri, id, individualPropertyName, iter.next(), spdxIdProperties, true);
+				setPropertyValueForJsonNode(documentUri, id, property, iter.next(), spdxIdProperties, true);
 			}
-		}; break;
-		case BOOLEAN: {
-			if (list) {
-				store.addValueToCollection(documentUri, id, property, value.asBoolean());
-			} else {
-				store.setValue(documentUri, id, property, value.asBoolean()); 
-			}
-		} break;
-		case NULL: break; // ignore
-		case NUMBER: {
-			if (list) {
-				store.addValueToCollection(documentUri, id, property, value.asInt());
-			} else {
-				store.setValue(documentUri, id, property, value.asInt()); 
-			}
-		} break;
-		case OBJECT: {
+		} else if (!JsonNodeType.NULL.equals(value.getNodeType())) {
+			// ignore te null;
 			Optional<String> propertyType = SpdxJsonLDContext.getInstance().getType(property);
+			if (list) {
+				store.addValueToCollection(documentUri, id, 
+						MultiFormatStore.collectionPropertyNameToPropertyName(property), 
+						toStoredObject(documentUri, id, 
+								property, value, propertyType, spdxIdProperties, list));
+			} else {
+				store.setValue(documentUri, id, property, toStoredObject(documentUri, id, 
+						property, value, propertyType, spdxIdProperties, list));
+			}
+		}
+	}
+	/**
+	 * Convert the value to the appropriate type to be stored
+	 * @param documentUri document URI
+	 * @param id ID of the object to store the value
+	 * @param property property name
+	 * @param value JSON node containing the value
+	 * @param propertyType type of property
+	 * @param spdxIdProperties Properties which contain an SPDX ID which needs to be replaced
+	 * @param list true if this property is a list type
+	 * @return the object to be stored
+	 * @throws InvalidSPDXAnalysisException
+	 */
+	private Object toStoredObject(String documentUri, String id, String property, JsonNode value, 
+			Optional<String> propertyType, Map<String, String> spdxIdProperties, boolean list) throws InvalidSPDXAnalysisException {
+		switch (value.getNodeType()) {
+		case ARRAY:
+			throw new InvalidSPDXAnalysisException("Can not convert a JSON array to a stored object");
+		case BOOLEAN:
+			if (propertyType.isPresent()) {
+				Class<? extends Object> toStoreClass = SpdxJsonLDContext.XMLSCHEMA_TYPE_TO_JAVA_CLASS.get(propertyType.get());
+				if (Objects.isNull(toStoreClass)) {
+					// assume it is a boolean type
+					return value.asBoolean();
+				} else if (String.class.equals(toStoreClass)) {
+					return Boolean.toString(value.asBoolean());
+				} else if (Boolean.class.equals(toStoreClass)) {
+					return value.asBoolean();
+				} else {
+					throw new InvalidSPDXAnalysisException("Can not convert a JSON BOOLEAN to a "+toStoreClass.toString());
+				}
+			} else {
+				return value.asBoolean();
+			}
+		case NULL: throw new InvalidSPDXAnalysisException("Can not convert a JSON NULL to a stored object");
+		case NUMBER: {
+			if (propertyType.isPresent()) {
+				Class<? extends Object> toStoreClass = SpdxJsonLDContext.XMLSCHEMA_TYPE_TO_JAVA_CLASS.get(propertyType.get());
+				if (Objects.isNull(toStoreClass)) {
+					// assume it is a integer type
+					return value.asInt();
+				} else if (String.class.equals(toStoreClass)) {
+					return Double.toString(value.asDouble());
+				} else if (Integer.class.equals(toStoreClass)) {
+					return value.asInt();
+				} else {
+					throw new InvalidSPDXAnalysisException("Can not convert a JSON NUMBER to a "+toStoreClass.toString());
+				}
+			} else {
+				return value.asInt();
+			}
+		}
+		case OBJECT: {
 			if (!propertyType.isPresent()) {
 				throw new InvalidSPDXAnalysisException("Unknown type for property " + property);
 			}
@@ -301,49 +377,58 @@ public class JacksonDeSerializer {
 			String objectId = findObjectIdInJsonObject(documentUri, value);
 			store.create(documentUri, objectId, propertyType.get());
 			restoreObjectPropertyValues(documentUri, objectId, value, spdxIdProperties);
-			if (list) {
-				store.addValueToCollection(documentUri, id, property, new TypedValue(objectId, propertyType.get()));
-			} else {
-				store.setValue(documentUri, id, property, new TypedValue(objectId, propertyType.get()));
-			}
-		}; break;
+			return new TypedValue(objectId, propertyType.get());
+		}
 		case STRING:
-			setStringPropertyValueForJsonNode(documentUri, id, property, value, spdxIdProperties, list); break;
+			return getStringPropertyValueForJsonNode(documentUri, id, property, value, 
+					propertyType, spdxIdProperties, list);
 		case BINARY:
 		case MISSING:
 		case POJO:
 		default: throw new InvalidSPDXAnalysisException("Unsupported JSON node type: "+value.toString());
 		}
 	}
-
+	
 	/**
-	 * Set the property value for a string JsonNode
+	 * @param spdxIdProperties Properties which contain an SPDX ID which needs to be replaced
+	 * 
+	 * @throws InvalidSPDXAnalysisException
+	 */
+	/**
+	 * Gets the property value for a string JsonNode
 	 * @param documentUri document URI
 	 * @param id ID of the object to store the value
 	 * @param property property name
 	 * @param value JSON node containing the value
-	 * @param spdxIdProperties Properties which contain an SPDX ID which needs to be replaced
+	 * @param propertyType
 	 * @param list true if this property is a list type
+	 * @return the appropriate object to store
 	 * @throws InvalidSPDXAnalysisException
 	 */
-	private void setStringPropertyValueForJsonNode(String documentUri, String id, String property, JsonNode value,
-			Map<String, String> spdxIdProperties, boolean list) throws InvalidSPDXAnalysisException {
-		Optional<String> propertyType = SpdxJsonLDContext.getInstance().getType(property);
+	private Object getStringPropertyValueForJsonNode(String documentUri, String id, String property, JsonNode value,
+			Optional<String> propertyType, Map<String, String> spdxIdProperties, boolean list) throws InvalidSPDXAnalysisException {
 		Class<?> clazz = null;
 		if (propertyType.isPresent()) {
+			// check for SPDX model types
 			clazz = SpdxModelFactory.SPDX_TYPE_TO_CLASS.get(propertyType.get());
+			if (Objects.isNull(clazz)) {
+				// check for primitive types
+				clazz = SpdxJsonLDContext.XMLSCHEMA_TYPE_TO_JAVA_CLASS.get(propertyType.get());
+			}
 		}
-		if (Objects.nonNull(clazz)) {
+		if (Objects.isNull(clazz)) {
+			// Just return the string value
+			return value.asText();
+		} else {
+			// check for SPDX model classes
 			if (AnyLicenseInfo.class.isAssignableFrom(clazz)) {
+				// convert license expressions to their model object form
 				AnyLicenseInfo parsedLicense = LicenseInfoFactory.parseSPDXLicenseString(value.asText(), store, documentUri, null);
-				if (list) {
-					store.addValueToCollection(documentUri, id, property, new TypedValue(parsedLicense.getId(), parsedLicense.getType()));
-				} else {
-					store.setValue(documentUri, id, property, new TypedValue(parsedLicense.getId(), parsedLicense.getType()));
-				}				
+				return ModelStorageClassConverter.modelObjectToStoredObject(parsedLicense, documentUri, store, null);			
 			} else if (SpdxDocument.class.isAssignableFrom(clazz) || ReferenceType.class.isAssignableFrom(clazz)) {
+				// Convert any IndividualUriValue values
 				final String uriValue = value.asText();
-				IndividualUriValue individualUriValue = new IndividualUriValue() {
+				return new IndividualUriValue() {
 
 					@Override
 					public String getIndividualURI() {
@@ -351,40 +436,42 @@ public class JacksonDeSerializer {
 					}
 					
 				};
-				if (list) {
-					store.addValueToCollection(documentUri, id, property, individualUriValue);
-				} else {
-					store.setValue(documentUri, id, property, individualUriValue);
-				}
 			} else if (SpdxElement.class.isAssignableFrom(clazz)) {
+				// store the ID and save it in the spdxIdProperties to replace with the actual class later
+				// once everything is restored
 				if (list) {
-					store.addValueToCollection(documentUri, id, property, value.asText());
+					spdxIdProperties.put(id, MultiFormatStore.collectionPropertyNameToPropertyName(property));
 				} else {
-					store.setValue(documentUri, id, property, value.asText());
+					spdxIdProperties.put(id, property);
 				}
-				spdxIdProperties.put(id, property);
-			} else if (clazz.isEnum()) {					
+				return value.asText();
+			} else if (clazz.isEnum()) {
 				for (Object enumConst:clazz.getEnumConstants()) {
 					if (enumConst instanceof IndividualUriValue && value.asText().equals(enumConst.toString())) {
-						IndividualUriValue iuv = new SimpleUriValue((IndividualUriValue)enumConst);
-						if (list) {
-							store.addValueToCollection(documentUri, id, property, iuv);
-						} else {
-							store.setValue(documentUri, id, property, iuv);
-						}
+						return new SimpleUriValue((IndividualUriValue)enumConst);
 					}
 				}
-			} else {
+				throw new InvalidSPDXAnalysisException("Could not find enum constants for "+value.asText()+" property "+property);
+			} else if (String.class.equals(clazz)) {
+				return value.asText();
+			} else if (Boolean.class.equals(clazz)) {
+				try {
+					return Boolean.parseBoolean(value.asText());
+				} catch (Exception ex) {
+					throw new InvalidSPDXAnalysisException("Unable to convert "+value.asText()+" to boolean for property "+property);
+				}
+			} else if (Integer.class.equals(clazz)) {
+				try {
+					return Integer.parseInt(value.asText());
+				} catch (Exception ex) {
+					throw new InvalidSPDXAnalysisException("Unable to convert "+value.asText()+" to integer for property "+property);
+				}
+			}	else {
 				throw new InvalidSPDXAnalysisException("Unknown type: "+propertyType.get()+" for property "+property);
-			}
-		} else {
-			if (list) {
-				store.addValueToCollection(documentUri, id, property, value.asText()); 
-			} else {
-				store.setValue(documentUri, id, property, value.asText()); 
 			}
 		}
 	}
+
 
 	/**
 	 * @param documentUri
