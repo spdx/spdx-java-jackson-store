@@ -23,26 +23,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 import org.spdx.jacksonstore.MultiFormatStore;
 import org.spdx.jacksonstore.MultiFormatStore.Format;
-import org.spdx.jacksonstore.MultiFormatStore.Verbose;
 import org.spdx.library.InvalidSPDXAnalysisException;
-import org.spdx.library.model.Relationship;
 import org.spdx.library.model.SpdxDocument;
-import org.spdx.library.model.SpdxFile;
-import org.spdx.library.model.SpdxModelFactory;
-import org.spdx.library.model.SpdxPackage;
-import org.spdx.library.model.SpdxSnippet;
-import org.spdx.library.model.pointer.SinglePointer;
-import org.spdx.library.model.pointer.StartEndPointer;
 import org.spdx.utility.compare.SpdxCompareException;
 import org.spdx.utility.compare.SpdxComparer;
-import org.spdx.utility.compare.SpdxFileDifference;
-import org.spdx.utility.compare.SpdxPackageComparer;
 
 import junit.framework.TestCase;
 
@@ -160,6 +148,7 @@ public class MultiFormatStoreTest extends TestCase {
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		inputStore.setFormat(Format.XML);
 		inputStore.serialize(documentUri, outputStream);
+		@SuppressWarnings("unused")
 		String temp = new String(outputStream.toByteArray());
 		ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
 		MultiFormatStore outputStore = new MultiFormatStore(Format.XML);
@@ -172,9 +161,6 @@ public class MultiFormatStoreTest extends TestCase {
 		SpdxComparer comparer = new SpdxComparer();
 		comparer.compare(inputDocument, compareDocument);
 		assertTrue(comparer.isfilesEquals());
-		List<SpdxPackage> unique = comparer.getUniquePackages(0, 1);
-		unique = comparer.getUniquePackages(1, 0);
-		List<SpdxPackageComparer> differences = comparer.getPackageDifferences();
 		assertTrue(comparer.isPackagesEquals());
 		assertTrue(comparer.isDocumentRelationshipsEquals());
 		assertFalse(comparer.isDifferenceFound());
