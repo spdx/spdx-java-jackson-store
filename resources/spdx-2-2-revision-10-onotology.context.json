@@ -100,6 +100,11 @@
       "@id" : "spdx:reviewed",
       "@type" : "spdx:Review"
     },
+    "revieweds" : {
+      "@id" : "spdx:revieweds",
+      "@type" : "spdx:Review",
+      "@container" : "@set"
+    },
     "creationInfo" : {
       "@id" : "spdx:creationInfo",
       "@type" : "spdx:CreationInfo"
@@ -279,6 +284,15 @@
       "@id" : "spdx:fileName",
       "@type" : "xs:string"
     },
+    "attributionText" : {
+      "@id" : "spdx:attributionText",
+      "@type" : "xs:string"
+    },
+    "attributionTexts" : {
+      "@id" : "spdx:attributionTexts",
+      "@type" : "xs:string",
+      "@container" : "@set"
+    },
     "packageName" : {
       "@id" : "spdx:packageName",
       "@type" : "xs:string"
@@ -296,7 +310,8 @@
       "@type" : "xs:boolean"
     },
     "comment" : {
-      "@id" : "rdfs:comment"
+      "@id" : "rdfs:comment",
+      "@type" : "xs:string"
     },
     "licenseText" : {
       "@id" : "spdx:licenseText",
@@ -307,10 +322,12 @@
       "@type" : "xs:string"
     },
     "seeAlso" : {
-      "@id" : "rdfs:seeAlso"
+      "@id" : "rdfs:seeAlso",
+      "@type" : "xs:string"
     },
     "seeAlsos" : {
       "@id" : "rdfs:seeAlsos",
+      "@type" : "xs:string",
       "@container" : "@set"
     },
     "licenseExceptionText" : {

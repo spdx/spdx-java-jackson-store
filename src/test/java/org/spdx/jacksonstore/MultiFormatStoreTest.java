@@ -40,7 +40,7 @@ import junit.framework.TestCase;
  */
 public class MultiFormatStoreTest extends TestCase {
 	
-	static final String JSON_FILE_PATH = "testResources" + File.separator + "SPDXJSONExample-v2.0.json";
+	static final String JSON_FILE_PATH = "testResources" + File.separator + "SPDXJSONExample-v2.2.spdx.json";
 
 	/* (non-Javadoc)
 	 * @see junit.framework.TestCase#setUp()
