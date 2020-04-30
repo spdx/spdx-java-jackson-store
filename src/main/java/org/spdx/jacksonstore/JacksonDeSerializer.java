@@ -509,7 +509,25 @@ public class JacksonDeSerializer {
 	private Object idToObjectValue(String documentNamespace, String spdxId, Map<String, TypedValue> addedElements) throws InvalidSPDXAnalysisException {
 		TypedValue fixedValue = addedElements.get(spdxId);
 		if (Objects.isNull(fixedValue)) {
-			if (spdxId.startsWith("DocumentRef-")) {
+			if (spdxId.equals(SpdxConstants.NONE_VALUE)) {
+				return new IndividualUriValue() {
+
+					@Override
+					public String getIndividualURI() {
+						return SpdxConstants.URI_VALUE_NONE;
+					}
+					
+				};
+			} else if (spdxId.equals(SpdxConstants.NOASSERTION_VALUE)) {
+				return new IndividualUriValue() {
+
+					@Override
+					public String getIndividualURI() {
+						return SpdxConstants.URI_VALUE_NOASSERTION;
+					}
+					
+				};
+			} else if (spdxId.startsWith("DocumentRef-")) {
 				final IModelStore modelStore = store;
 				IndividualUriValue spdxExternalElementRef = new IndividualUriValue() {
 

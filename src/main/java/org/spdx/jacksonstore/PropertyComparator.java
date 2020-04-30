@@ -41,7 +41,7 @@ public class PropertyComparator implements Comparator<String> {
 	
 	static final List<String> DOCUMENT_PROPERTY_ORDER = Arrays.asList(new String[] {
 			SpdxConstants.PROP_DOCUMENT_NAMESPACE,
-			SpdxConstants.PROP_SPDX_SPDX_VERSION,
+			SpdxConstants.PROP_SPDX_SPEC_VERSION,
 			SpdxConstants.PROP_SPDX_CREATION_INFO,
 			SpdxConstants.PROP_NAME,
 			SpdxConstants.PROP_SPDX_DATA_LICENSE,

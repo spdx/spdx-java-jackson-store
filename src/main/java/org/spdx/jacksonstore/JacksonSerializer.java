@@ -293,13 +293,18 @@ public class JacksonSerializer {
 				String relatedElementId = ((TypedValue)relatedSpdxElement.get()).getId();
 				relationship.put(SpdxConstants.PROP_RELATED_SPDX_ELEMENT, relatedElementId);
 			} else if (relatedSpdxElement.get() instanceof IndividualUriValue) {
-				// external SPDX element
 				String externalUri = ((IndividualUriValue)relatedSpdxElement.get()).getIndividualURI();
-				if (!SpdxConstants.EXTERNAL_SPDX_ELEMENT_URI_PATTERN.matcher(externalUri).matches()) {
-					throw new SpdxInvalidTypeException("SPDX element must be of SpdxElement or external SPDX element type.  URI does not match pattern for external element: "+externalUri);
+				if (SpdxConstants.URI_VALUE_NONE.equals(externalUri)) {
+					relationship.put(SpdxConstants.PROP_RELATED_SPDX_ELEMENT, SpdxConstants.NONE_VALUE);
+				} else if (SpdxConstants.URI_VALUE_NOASSERTION.equals(externalUri)) {
+					relationship.put(SpdxConstants.PROP_RELATED_SPDX_ELEMENT, SpdxConstants.NOASSERTION_VALUE);
+				} else if (SpdxConstants.EXTERNAL_SPDX_ELEMENT_URI_PATTERN.matcher(externalUri).matches()) {
+					// external SPDX element
+					ExternalSpdxElement externalElement = ExternalSpdxElement.uriToExternalSpdxElement(externalUri, store, documentUri, null);
+					relationship.put(SpdxConstants.PROP_RELATED_SPDX_ELEMENT, externalElement.getExternalDocumentId() + ":" + externalElement.getExternalElementId());
+				} else {
+					throw new SpdxInvalidTypeException("SPDX element must be of SpdxElement, SpdxNoneElement, SpdxNoAssertionElement or external SPDX element type.  URI does not match pattern for external element: "+externalUri);
 				}
-				ExternalSpdxElement externalElement = ExternalSpdxElement.uriToExternalSpdxElement(externalUri, store, documentUri, null);
-				relationship.put(SpdxConstants.PROP_RELATED_SPDX_ELEMENT, externalElement.getExternalDocumentId() + ":" + externalElement.getExternalElementId());
 			}  else {
 				throw new SpdxInvalidTypeException("SPDX element must be of SpdxElement or external SPDX element type.  Found type "+relatedSpdxElement.get().getClass().toString());
 			}
