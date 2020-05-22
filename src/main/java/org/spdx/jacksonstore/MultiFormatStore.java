@@ -22,7 +22,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONObject;
 import org.json.XML;
@@ -30,9 +29,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spdx.library.InvalidSPDXAnalysisException;
 import org.spdx.library.SpdxConstants;
+import org.spdx.storage.IModelStore;
 import org.spdx.storage.ISerializableModelStore;
-import org.spdx.storage.simple.InMemSpdxStore;
-import org.spdx.storage.simple.StoredTypedItem;
+import org.spdx.storage.simple.ExtendedSpdxStore;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -52,7 +51,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
  * @author Gary O'Neall
  *
  */
-public class MultiFormatStore extends InMemSpdxStore implements ISerializableModelStore {
+public class MultiFormatStore extends ExtendedSpdxStore implements ISerializableModelStore {
 	
 	static final Logger logger = LoggerFactory.getLogger(MultiFormatStore.class);
 	
@@ -81,11 +80,12 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 	private ObjectMapper inputMapper;
 	
 	/**
+	 * @param baseStore modelStore to store the results of the desearialization
 	 * @param format Format - XML, JSON or YAML
 	 * @param verbose How verbose to make the document
 	 */
-	public MultiFormatStore(Format format, Verbose verbose) {
-		super();
+	public MultiFormatStore(IModelStore baseStore, Format format, Verbose verbose) {
+		super(baseStore);
 		Objects.requireNonNull(format);
 		Objects.requireNonNull(verbose);
 		this.format = format;
@@ -108,10 +108,11 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 	
 	/**
 	 * Default compact version of MultiFormatStore
+	 * @param baseStore modelStore to store the results of the desearialization
 	 * @param format Format - XML, JSON or YAML
 	 */
-	public MultiFormatStore(Format format) {
-		this(format, Verbose.COMPACT);
+	public MultiFormatStore(IModelStore baseStore, Format format) {
+		this(baseStore, format, Verbose.COMPACT);
 	}
 	
 	
@@ -242,21 +243,16 @@ public class MultiFormatStore extends InMemSpdxStore implements ISerializableMod
 		if (Objects.isNull(documentNamespace) || documentNamespace.isEmpty()) {
 			throw new InvalidSPDXAnalysisException("Empty document namespace");
 		}
-		IModelStoreLock lock = this.enterCriticalSection(documentNamespace, false);
-		try {
-			ConcurrentHashMap<String, StoredTypedItem> idMap = documentValues.get(documentNamespace);
-			if (Objects.nonNull(idMap)) {
+		if (this.getDocumentUris().contains(documentNamespace)) {
+			IModelStoreLock lock = this.enterCriticalSection(documentNamespace, false);
+			try {
 				if (!overwrite) {
 					throw new InvalidSPDXAnalysisException("Document namespace "+documentNamespace+" already exists.");
 				}
-				idMap.clear();
-			} else {
-				while (idMap == null) {
-					idMap = documentValues.putIfAbsent(documentNamespace, new ConcurrentHashMap<String, StoredTypedItem>());
-				}
+				this.clear(documentNamespace);
+			} finally {
+				this.leaveCriticalSection(lock);
 			}
-		} finally {
-			this.leaveCriticalSection(lock);
 		}
 		JacksonDeSerializer deSerializer = new JacksonDeSerializer(this, format);
 		deSerializer.storeDocument(documentNamespace, doc);	

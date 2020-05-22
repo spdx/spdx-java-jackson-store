@@ -29,6 +29,7 @@ import org.spdx.jacksonstore.MultiFormatStore;
 import org.spdx.jacksonstore.MultiFormatStore.Format;
 import org.spdx.library.InvalidSPDXAnalysisException;
 import org.spdx.library.model.SpdxDocument;
+import org.spdx.storage.simple.InMemSpdxStore;
 import org.spdx.utility.compare.SpdxCompareException;
 import org.spdx.utility.compare.SpdxComparer;
 
@@ -64,7 +65,7 @@ public class MultiFormatStoreTest extends TestCase {
 	 */
 	public void testDeSerializeSerializeJson() throws InvalidSPDXAnalysisException, IOException, SpdxCompareException {
 		File jsonFile = new File(JSON_FILE_PATH);
-		MultiFormatStore inputStore = new MultiFormatStore(Format.JSON_PRETTY);
+		MultiFormatStore inputStore = new MultiFormatStore(new InMemSpdxStore(), Format.JSON_PRETTY);
 		try (InputStream input = new FileInputStream(jsonFile)) {
 			inputStore.deSerialize(input, false);
 		}
@@ -85,7 +86,7 @@ public class MultiFormatStoreTest extends TestCase {
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		inputStore.serialize(documentUri, outputStream);
 		ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
-		MultiFormatStore outputStore = new MultiFormatStore(Format.JSON_PRETTY);
+		MultiFormatStore outputStore = new MultiFormatStore(new InMemSpdxStore(), Format.JSON_PRETTY);
 		outputStore.deSerialize(inputStream, false);
 		SpdxDocument compareDocument = new SpdxDocument(outputStore, documentUri, null, false);
 		verify = inputDocument.verify();
@@ -103,7 +104,7 @@ public class MultiFormatStoreTest extends TestCase {
 	
 	public void testDeSerializeSerializeYaml() throws InvalidSPDXAnalysisException, IOException, SpdxCompareException {
 		File jsonFile = new File(JSON_FILE_PATH);
-		MultiFormatStore inputStore = new MultiFormatStore(Format.JSON_PRETTY);
+		MultiFormatStore inputStore = new MultiFormatStore(new InMemSpdxStore(), Format.JSON_PRETTY);
 		try (InputStream input = new FileInputStream(jsonFile)) {
 			inputStore.deSerialize(input, false);
 		}
@@ -117,7 +118,7 @@ public class MultiFormatStoreTest extends TestCase {
 		inputStore.setFormat(Format.YAML);
 		inputStore.serialize(documentUri, outputStream);
 		ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
-		MultiFormatStore outputStore = new MultiFormatStore(Format.YAML);
+		MultiFormatStore outputStore = new MultiFormatStore(new InMemSpdxStore(), Format.YAML);
 		outputStore.deSerialize(inputStream, false);
 		SpdxDocument compareDocument = new SpdxDocument(outputStore, documentUri, null, false);
 		verify = inputDocument.verify();
@@ -135,7 +136,7 @@ public class MultiFormatStoreTest extends TestCase {
 	
 	public void testDeSerializeSerializeXml() throws InvalidSPDXAnalysisException, IOException, SpdxCompareException {
 		File jsonFile = new File(JSON_FILE_PATH);
-		MultiFormatStore inputStore = new MultiFormatStore(Format.JSON_PRETTY);
+		MultiFormatStore inputStore = new MultiFormatStore(new InMemSpdxStore(), Format.JSON_PRETTY);
 		try (InputStream input = new FileInputStream(jsonFile)) {
 			inputStore.deSerialize(input, false);
 		}
@@ -151,7 +152,7 @@ public class MultiFormatStoreTest extends TestCase {
 		@SuppressWarnings("unused")
 		String temp = new String(outputStream.toByteArray());
 		ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
-		MultiFormatStore outputStore = new MultiFormatStore(Format.XML);
+		MultiFormatStore outputStore = new MultiFormatStore(new InMemSpdxStore(), Format.XML);
 		outputStore.deSerialize(inputStream, false);
 		SpdxDocument compareDocument = new SpdxDocument(outputStore, documentUri, null, false);
 		verify = inputDocument.verify();
