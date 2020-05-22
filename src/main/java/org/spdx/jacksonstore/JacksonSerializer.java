@@ -228,15 +228,16 @@ public class JacksonSerializer {
 	 * @throws InvalidSPDXAnalysisException
 	 */
 	private ArrayNode getDocElements(String documentUri, String type, ArrayNode relationships) throws InvalidSPDXAnalysisException {
-		ArrayNode retval = mapper.createArrayNode();
-		store.getAllItems(documentUri, type).forEach(tv -> {
-			try {
-				retval.add(typedValueToObjectNode(documentUri, tv, relationships));
-			} catch (InvalidSPDXAnalysisException e) {
-				throw new RuntimeException(e);
-			}
-		});
-		return retval;
+		return store.getAllItems(documentUri, type).collect(() -> mapper.createArrayNode(), (an,  item) ->
+				{
+					try {
+						an.add(typedValueToObjectNode(documentUri, item, relationships));
+					} catch (InvalidSPDXAnalysisException e) {
+						throw new RuntimeException(e);
+					}
+				}, (an1, an2) -> {
+					an1.addAll(an2);
+				});
 	}
 	
 	/**
