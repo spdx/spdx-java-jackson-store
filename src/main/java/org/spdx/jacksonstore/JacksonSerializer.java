@@ -125,8 +125,7 @@ public class JacksonSerializer {
 			ObjectNode output;
 			switch (format) {
 				case YAML: {
-					output = mapper.createObjectNode();
-					output.set("Document", doc);
+					output = doc;
 					break;
 				}
 				case XML: {
@@ -135,14 +134,12 @@ public class JacksonSerializer {
 					break;
 				}
 				case JSON: {
-					output = mapper.createObjectNode();
-					output.set("Document", doc);
+					output = doc;
 					break;
 				}
 				case JSON_PRETTY:
 				default:  {
-					output = mapper.createObjectNode();
-					output.set("Document", doc);
+					output = doc;
 					break;
 				}
 			}
