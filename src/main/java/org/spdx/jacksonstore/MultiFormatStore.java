@@ -230,7 +230,7 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 			JSONObject jo = XML.toJSONObject(new InputStreamReader(stream));
 			doc = inputMapper.readTree(jo.toString()).get("Document");
 		} else {
-			doc  = inputMapper.readTree(stream).get("Document");
+			doc  = inputMapper.readTree(stream);
 		}
 		if (Objects.isNull(doc)) {
 			throw new InvalidSPDXAnalysisException("Missing SPDX Document");
