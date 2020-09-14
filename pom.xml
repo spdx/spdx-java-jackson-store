@@ -34,7 +34,7 @@
     <dependency>
     	<groupId>com.fasterxml.jackson.core</groupId>
     	<artifactId>jackson-databind</artifactId>
-    	<version>2.10.0.pr1</version>
+    	<version>2.10.1</version>
     </dependency>
     <dependency>
     	<groupId>com.fasterxml.jackson.dataformat</groupId>
@@ -50,6 +50,11 @@
     	<groupId>org.json</groupId>
     	<artifactId>json</artifactId>
     	<version>20190722</version>
+    </dependency>
+    <dependency>
+    	<groupId>com.fasterxml.jackson.core</groupId>
+    	<artifactId>jackson-core</artifactId>
+    	<version>2.10.1</version>
     </dependency>
   </dependencies>
      <build>
