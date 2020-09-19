@@ -1,4 +1,4 @@
-# Spdx-Java-Jackson-Store
+# spdx-java-jackson-store
 Storage for SPDX documents utilizing [Jackson Databind](https://github.com/FasterXML/jackson-databind).
 
 This store supports serializing and deserializing files in JSON, YAML and XML formats.
@@ -16,7 +16,7 @@ Create an instance of `MultiFormatStore(IModelStore baseStore, Format format)` p
 - `JSON` - Compact JSON format
 - `JSON_PRETTY` - pretty printed JSON format
 - `XML` - XML Format
-- 'YAML` - YAML format
+- `YAML` - YAML format
 
 # Serializing and Deserializing
 
