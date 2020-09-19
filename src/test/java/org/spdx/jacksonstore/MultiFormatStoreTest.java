@@ -133,7 +133,7 @@ public class MultiFormatStoreTest extends TestCase {
 		assertFalse(comparer.isDifferenceFound());
 		assertTrue(inputDocument.equivalent(compareDocument));
 	}
-	
+
 	public void testDeSerializeSerializeXml() throws InvalidSPDXAnalysisException, IOException, SpdxCompareException {
 		File jsonFile = new File(JSON_FILE_PATH);
 		MultiFormatStore inputStore = new MultiFormatStore(new InMemSpdxStore(), Format.JSON_PRETTY);
@@ -161,6 +161,7 @@ public class MultiFormatStoreTest extends TestCase {
 		assertEquals(0, verify.size());
 		SpdxComparer comparer = new SpdxComparer();
 		comparer.compare(inputDocument, compareDocument);
+		assertTrue(comparer.isExtractedLicensingInfosEqual());
 		assertTrue(comparer.isfilesEquals());
 		assertTrue(comparer.isPackagesEquals());
 		assertTrue(comparer.isDocumentRelationshipsEquals());

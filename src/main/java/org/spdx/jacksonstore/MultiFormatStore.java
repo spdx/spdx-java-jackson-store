@@ -227,7 +227,7 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 		JsonNode doc;
 		if (Format.XML.equals(format)) {
 			// Jackson XML mapper does not support deserializing collections or arrays.  Use Json-In-Java to convert to JSON
-			JSONObject jo = XML.toJSONObject(new InputStreamReader(stream));
+			JSONObject jo = XML.toJSONObject(new InputStreamReader(stream, "UTF-8"));
 			doc = inputMapper.readTree(jo.toString()).get("Document");
 		} else {
 			doc  = inputMapper.readTree(stream);
