@@ -3,16 +3,81 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.spdx</groupId>
+  <artifactId>spdx-jackson-store</artifactId>
   <version>0.0.3</version>
   <packaging>jar</packaging>
 
-  <name>jacksonstore</name>
+  <name>spdx-jackson-store</name>
   <url>http://spdx.org</url>
-
+     <description>Storage for SPDX documents utilizing Jackson Databind.
+This store supports serializing and deserializing files in JSON, YAML and XML formats.</description>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
-
+   <licenses>
+	<license>
+		<name>The Apache Software License, Version 2.0</name>
+		<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+		<distribution>repo</distribution>
+	</license>
+	</licenses>
+	<developers>
+		<developer>
+			<id>goneall</id>
+			<name>Gary O'Neall</name>
+			<email>gary@sourceauditor.com</email>
+			<organization>SPDX</organization>
+			<organizationUrl>http://spdx.org</organizationUrl>
+		</developer>
+	</developers>
+	<organization>
+		<name>SPDX</name>
+		<url>http://spdx.org</url>
+	</organization>
+    <distributionManagement>
+      <repository>
+        <id>bintray-spdx-spdx-tools</id>
+        <name>spdx-spdx-tools</name>
+        <url>https://api.bintray.com/maven/spdx/spdx-tools/java-spdx-jackson-store/;publish=1</url>
+      </repository>
+	</distributionManagement>
+	
+	<profiles>
+		<profile>
+			<id>doclint-java8-disable</id>
+			<activation>
+				<jdk>[1.8,)</jdk>
+			</activation>
+			<properties>
+				<javadoc.opts>-Xdoclint:none</javadoc.opts>
+			</properties>
+		</profile>
+		<profile>
+			<id>gpg-signing</id>
+			<build>
+				<plugins>
+					<plugin>
+		      			<groupId>org.apache.maven.plugins</groupId>
+		      			<artifactId>maven-gpg-plugin</artifactId>
+		      			<version>1.6</version>
+		      			<executions>
+		        			<execution>
+		          				<id>sign-artifacts</id>
+		          				<phase>verify</phase>
+		          				<goals>
+		            				<goal>sign</goal>
+		          				</goals>
+		          				<configuration>
+		              				<keyname>${gpg.keyname}</keyname>
+		              				<passphraseServerId>${gpg.keyname}</passphraseServerId>
+		            			</configuration>
+		        			</execution>
+		      			</executions>
+	    			</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
@@ -97,7 +162,7 @@
 			</testResource>
 		</testResources>
 		<plugins>
-		<plugin>
+			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.6.1</version>
@@ -110,10 +175,92 @@
 					<optimize>true</optimize>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>2.9</version>
+				<configuration>
+					<quiet>true</quiet>
+					<source>8</source>
+					<javadocExecutable>${env.JAVA_HOME}/bin/javadoc</javadocExecutable>
+					<additionalparam>-Xdoclint:none</additionalparam>
+				</configuration>
+				<executions>
+					<execution>
+						<id>attach-javadocs</id>
+						<configuration>
+							<additionalparam>${javadoc.opts}</additionalparam>
+						</configuration>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		   	<plugin>
+		      <groupId>org.apache.maven.plugins</groupId>
+		      <artifactId>maven-source-plugin</artifactId>
+		      <version>3.2.1</version>
+		      <executions>
+		        <execution>
+		          <id>attach-sources</id>
+		          <phase>verify</phase>
+		          <goals>
+		            <goal>jar-no-fork</goal>
+		          </goals>
+		        </execution>
+		      </executions>
+		    </plugin>
+			<plugin>
+				<groupId>org.spdx</groupId>
+					<artifactId>spdx-maven-plugin</artifactId>
+					<version>0.5.3</version>
+					<executions>
+						<execution>
+							<id>build-spdx</id>
+							<phase>prepare-package</phase>
+							<goals>
+								<goal>createSPDX</goal>
+							</goals>
+						</execution>
+					</executions>
+					<configuration>
+						<spdxDocumentNamespace>http://spdx.org/documents/java-spdx-jackson-store-{$version}</spdxDocumentNamespace>
+						
+					<defaultFileCopyright>Copyright (c) 2020 Source Auditor Inc.</defaultFileCopyright>
+					<defaultFileContributors>
+						<param>Gary O'Neall</param>
+					</defaultFileContributors>
+					<defaultLicenseInformationInFile>Apache-2.0</defaultLicenseInformationInFile>
+					<defaultFileConcludedLicense>Apache-2.0</defaultFileConcludedLicense>
+					<defaultFileNotice>Licensed under the Apache License, Version 2.0 (the "License");
+	  you may not use this file except in compliance with the License.
+	  You may obtain a copy of the License at
+	
+	      http://www.apache.org/licenses/LICENSE-2.0
+	
+	  Unless required by applicable law or agreed to in writing, software
+	  distributed under the License is distributed on an "AS IS" BASIS,
+	  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	  See the License for the specific language governing permissions and
+	  limitations under the License.</defaultFileNotice>
+					<licenseDeclared>Apache-2.0</licenseDeclared>
+					<licenseConcluded>Apache-2.0</licenseConcluded>
+					<creators>
+						<param>Person: Gary O'Neall</param>
+					</creators>
+					<originator>Organization: Linux Foundation</originator>
+				</configuration>
+	          </plugin>
 		</plugins>
   </build>
-     <description>Storage for SPDX documents utilizing Jackson Databind.
-
-This store supports serializing and deserializing files in JSON, YAML and XML formats.</description>
-     <artifactId>jacksonstore</artifactId>
+  <reporting>
+   	<plugins>
+   		<plugin>
+     		<groupId>org.codehaus.mojo</groupId>
+     		<artifactId>findbugs-maven-plugin</artifactId>
+     		<version>3.0.1</version>
+   		</plugin>
+   	</plugins>
+  </reporting>
 </project>
