@@ -3,12 +3,11 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.spdx</groupId>
-  <artifactId>jsonstore</artifactId>
-  <version>0.0.2-SNAPSHOT</version>
+  <version>0.0.3</version>
   <packaging>jar</packaging>
 
-  <name>jsonstore</name>
-  <url>http://maven.apache.org</url>
+  <name>jacksonstore</name>
+  <url>http://spdx.org</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -24,7 +23,7 @@
     <dependency>
     	<groupId>org.spdx</groupId>
     	<artifactId>java-spdx-library</artifactId>
-    	<version>0.0.2-SNAPSHOT</version>
+    	<version>0.0.3</version>
     </dependency>
     <dependency>
     	<groupId>com.google.code.gson</groupId>
@@ -113,4 +112,8 @@
 			</plugin>
 		</plugins>
   </build>
+     <description>Storage for SPDX documents utilizing Jackson Databind.
+
+This store supports serializing and deserializing files in JSON, YAML and XML formats.</description>
+     <artifactId>jacksonstore</artifactId>
 </project>
