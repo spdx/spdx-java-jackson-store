@@ -4,13 +4,25 @@
 
   <groupId>org.spdx</groupId>
   <artifactId>spdx-jackson-store</artifactId>
-  <version>0.0.3</version>
+  <version>0.0.4</version>
   <packaging>jar</packaging>
 
   <name>spdx-jackson-store</name>
   <url>http://spdx.org</url>
-     <description>Storage for SPDX documents utilizing Jackson Databind.
+  <description>Storage for SPDX documents utilizing Jackson Databind.
 This store supports serializing and deserializing files in JSON, YAML and XML formats.</description>
+  <scm>
+  	<url>https://github.com/spdx/spdx-java-jackson-store</url>
+  	<connection>https:</connection>
+  </scm>
+  <issueManagement>
+  	<system>Github</system>
+  	<url>https://github.com/spdx/spdx-java-jackson-store/issues</url>
+  </issueManagement>
+  <ciManagement>
+  	<system>Github Actions</system>
+  	<url>https://github.com/spdx/spdx-java-jackson-store/actions</url>
+  </ciManagement>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
@@ -88,7 +100,7 @@ This store supports serializing and deserializing files in JSON, YAML and XML fo
     <dependency>
     	<groupId>org.spdx</groupId>
     	<artifactId>java-spdx-library</artifactId>
-    	<version>0.0.3</version>
+    	<version>0.0.4</version>
     </dependency>
     <dependency>
     	<groupId>com.google.code.gson</groupId>
