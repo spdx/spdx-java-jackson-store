@@ -171,7 +171,12 @@ public class JacksonDeSerializer {
 			throw new InvalidSPDXAnalysisException("Duplicate SPDX ID: "+id);
 		}
 		store.create(documentUri, id, type);
+		try {
 		restoreObjectPropertyValues(documentUri, id, jsonNode, spdxIdProperties);
+		} catch(InvalidSPDXAnalysisException ex) {
+			// Add more information to the error message
+			throw new InvalidSPDXAnalysisException("Error parsing JSON field for ID "+id+": "+ex.getMessage(), ex);
+		}
 		addedElements.put(id, new TypedValue(id, type));
 	}
 
