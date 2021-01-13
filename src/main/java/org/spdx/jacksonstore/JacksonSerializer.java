@@ -39,6 +39,7 @@ import org.spdx.library.model.SpdxModelFactory;
 import org.spdx.library.model.TypedValue;
 import org.spdx.library.model.enumerations.SpdxEnumFactory;
 import org.spdx.library.model.license.AnyLicenseInfo;
+import org.spdx.library.model.license.SimpleLicensingInfo;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.IModelStore.IModelStoreLock;
 import org.spdx.storage.IModelStore.IdType;
@@ -65,6 +66,11 @@ public class JacksonSerializer {
 	 *
 	 */
 	class Document extends ObjectNode {
+
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
 
 		public Document(JsonNodeFactory nc) {
 			super(nc);
@@ -166,9 +172,10 @@ public class JacksonSerializer {
 		if (SpdxElement.class.isAssignableFrom(clazz) && 
 				IdType.SpdxId.equals(store.getIdType(storedItem.getId()))) {
 			retval.put(SpdxConstants.SPDX_IDENTIFIER, storedItem.getId());
-		}
-		if (ExternalDocumentRef.class.isAssignableFrom(clazz)) {
+		} else if (ExternalDocumentRef.class.isAssignableFrom(clazz)) {
 			retval.put(SpdxConstants.EXTERNAL_DOCUMENT_REF_IDENTIFIER, storedItem.getId());
+		} else if (SimpleLicensingInfo.class.isAssignableFrom(clazz)) {
+			retval.put(SpdxConstants.PROP_LICENSE_ID, storedItem.getId());
 		}
 		for (String propertyName:docPropNames) {
 			if (SpdxConstants.PROP_RELATIONSHIP.equals(propertyName)) {
