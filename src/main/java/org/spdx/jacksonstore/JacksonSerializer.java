@@ -169,9 +169,14 @@ public class JacksonSerializer {
 		docPropNames.sort(new PropertyComparator(storedItem.getType()));
 		//TODO - do we sort for all types or just for the document level?
 		Class<?> clazz = SpdxModelFactory.SPDX_TYPE_TO_CLASS.get(storedItem.getType());
-		if (SpdxElement.class.isAssignableFrom(clazz) && 
-				IdType.SpdxId.equals(store.getIdType(storedItem.getId()))) {
-			retval.put(SpdxConstants.SPDX_IDENTIFIER, storedItem.getId());
+		IdType idType = store.getIdType(storedItem.getId());
+		if (SpdxElement.class.isAssignableFrom(clazz)) {
+			if (IdType.SpdxId.equals(idType)) {
+				retval.put(SpdxConstants.SPDX_IDENTIFIER, storedItem.getId());
+			} else if (!IdType.Anonymous.equals(idType)) {
+				logger.error("Invalid ID "+storedItem.getId()+".  Must be an SPDX Identifier or Anonomous");
+				throw new InvalidSPDXAnalysisException("Invalid ID "+storedItem.getId()+".  Must be an SPDX Identifier or Anonomous");
+			}
 		} else if (ExternalDocumentRef.class.isAssignableFrom(clazz)) {
 			retval.put(SpdxConstants.EXTERNAL_DOCUMENT_REF_IDENTIFIER, storedItem.getId());
 		} else if (SimpleLicensingInfo.class.isAssignableFrom(clazz)) {

@@ -161,11 +161,11 @@ public class JacksonDeSerializer {
 		}
 		JsonNode idNode = jsonNode.get(SpdxConstants.SPDX_IDENTIFIER);
 		if (Objects.isNull(idNode) || !idNode.isTextual()) {
-			throw new InvalidSPDXAnalysisException("Missing SPDX ID");
+			throw new InvalidSPDXAnalysisException("Missing SPDX ID for type "+type);
 		}
 		String id = idNode.asText();
 		if (Objects.isNull(id) || id.isEmpty()) {
-			throw new InvalidSPDXAnalysisException("Missing SPDX ID");
+			throw new InvalidSPDXAnalysisException("Empty SPDX ID for type "+type);
 		}
 		if (addedElements.containsKey(id)) {
 			throw new InvalidSPDXAnalysisException("Duplicate SPDX ID: "+id);
