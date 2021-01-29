@@ -51,6 +51,7 @@ import org.spdx.storage.IModelStore.IModelStoreLock;
 import org.spdx.storage.IModelStore.IdType;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 
 /**
@@ -65,7 +66,7 @@ public class JacksonDeSerializer {
 	 * Properties that should not be restored as part of the deserialization
 	 */
 	static final Set<String> SKIPPED_PROPERTIES = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(new String[] {
-			SpdxConstants.PROP_DOCUMENT_DESCRIBES, SpdxConstants.PROP_DOCUMENT_PACKAGES, SpdxConstants.PROP_DOCUMENT_FILES,
+			SpdxConstants.PROP_DOCUMENT_PACKAGES, SpdxConstants.PROP_DOCUMENT_FILES,
 			SpdxConstants.PROP_DOCUMENT_SNIPPETS, SpdxConstants.SPDX_IDENTIFIER, SpdxConstants.PROP_DOCUMENT_RELATIONSHIPS
 	})));
 
@@ -207,7 +208,7 @@ public class JacksonDeSerializer {
 	
 
 	/**
-	 * Restore the relationships adding them as properites to the correct elements
+	 * Restore the relationships adding them as properties to the correct elements
 	 * @param documentNamespace
 	 * @param jsonNode
 	 * @param addedElements
@@ -251,13 +252,54 @@ public class JacksonDeSerializer {
 			if (Objects.isNull(relatedElement)) {
 				throw new InvalidSPDXAnalysisException("Missing SPDX element for ID "+relatedElementNode.asText());
 			}
-			String relationshipId = store.getNextId(IdType.Anonymous, documentNamespace);
-			store.create(documentNamespace, relationshipId, SpdxConstants.CLASS_RELATIONSHIP);
-			store.setValue(documentNamespace, relationshipId, SpdxConstants.PROP_RELATIONSHIP_TYPE, relationshipType);
-			store.setValue(documentNamespace, relationshipId, SpdxConstants.PROP_RELATED_SPDX_ELEMENT, relatedElement);
-			store.addValueToCollection(documentNamespace, element.getId(), SpdxConstants.PROP_RELATIONSHIP, 
-					new TypedValue(relationshipId, SpdxConstants.CLASS_RELATIONSHIP));
+			addRelationship(documentNamespace, element.getId(), relationshipType, relatedElement);
 		}
+	}
+
+	/**
+	 * Add a relationship to the element with ID elementId checking for duplicates
+	 * @param documentNamespace documentNamespace
+	 * @param elementId ID of the element containing the relationship
+	 * @param relationshipType relationshipType
+	 * @param relatedElement
+	 * @return the ID of the relationship
+	 * @throws InvalidSPDXAnalysisException 
+	 */
+	private String addRelationship(String documentNamespace, String elementId, SimpleUriValue relationshipType, Object relatedElement) throws InvalidSPDXAnalysisException {
+		// check for duplicates
+		Iterator<Object> iter = store.listValues(documentNamespace, elementId, SpdxConstants.PROP_RELATIONSHIP);
+		while (iter.hasNext()) {
+			Object next = iter.next();
+			try {
+				if (next instanceof TypedValue) {
+					TypedValue tvNext = (TypedValue)next;
+					if (SpdxConstants.CLASS_RELATIONSHIP.equals(tvNext.getType())) {
+						Optional<Object> rt = store.getValue(documentNamespace, tvNext.getId(), SpdxConstants.PROP_RELATIONSHIP_TYPE);
+						if (rt.isPresent() && rt.get() instanceof SimpleUriValue && 
+								relationshipType.getIndividualURI().equals(((SimpleUriValue)rt.get()).getIndividualURI())) {
+							Optional<Object> compareRelatedElement = store.getValue(documentNamespace, tvNext.getId(), SpdxConstants.PROP_RELATED_SPDX_ELEMENT);
+							if (compareRelatedElement.isPresent() && 
+									relatedElement.equals(compareRelatedElement.get()) ||
+									compareRelatedElement.get() instanceof TypedValue && ((TypedValue)compareRelatedElement.get()).getId().equals(relatedElement) ||
+									relatedElement instanceof TypedValue && ((TypedValue)relatedElement).getId().equals(compareRelatedElement.get())) {
+								// This would add a duplicate, just return
+								return tvNext.getId();
+							}
+						}
+					}
+				}
+			} catch(Exception ex) {
+				// We'll just skip
+			}
+
+		}
+		String relationshipId = store.getNextId(IdType.Anonymous, documentNamespace);
+		store.create(documentNamespace, relationshipId, SpdxConstants.CLASS_RELATIONSHIP);
+		store.setValue(documentNamespace, relationshipId, SpdxConstants.PROP_RELATIONSHIP_TYPE, relationshipType);
+		store.setValue(documentNamespace, relationshipId, SpdxConstants.PROP_RELATED_SPDX_ELEMENT, relatedElement);
+		store.addValueToCollection(documentNamespace, elementId, SpdxConstants.PROP_RELATIONSHIP, 
+				new TypedValue(relationshipId, SpdxConstants.CLASS_RELATIONSHIP));
+		return relationshipId;
 	}
 
 	/**
@@ -275,6 +317,18 @@ public class JacksonDeSerializer {
 			Entry<String, JsonNode> field = fieldIterator.next();
 			if (SKIPPED_PROPERTIES.contains(field.getKey())) {
 				continue;
+			} else if (SpdxConstants.PROP_DOCUMENT_DESCRIBES.equals(field.getKey())) {
+				// These needs to be converted to a DocumentDescribes relationship
+				if (!(field.getValue() instanceof ArrayNode)) {
+					throw new InvalidSPDXAnalysisException("Document Describes is not an array - invalid JSON format");
+				}
+				for (JsonNode describes:((ArrayNode)field.getValue())) {		
+					String relationshipId = addRelationship(documentUri, id, 
+							new SimpleUriValue(RelationshipType.DESCRIBES.getIndividualURI()), 
+							describes.asText());
+					spdxIdProperties.put(relationshipId, SpdxConstants.PROP_RELATED_SPDX_ELEMENT); // Add the SPDX ID to the list to be translated back to elements later
+				}
+
 			}
 			setPropertyValueForJsonNode(documentUri, id, field.getKey(), field.getValue(), spdxIdProperties, false);
 		}
