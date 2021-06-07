@@ -250,9 +250,6 @@ public class JacksonDeSerializer {
 				throw new InvalidSPDXAnalysisException("Missing required related element");
 			}
 			Object relatedElement = idToObjectValue(documentNamespace, relatedElementNode.asText(), addedElements);
-			if (Objects.isNull(relatedElement)) {
-				throw new InvalidSPDXAnalysisException("Missing SPDX element for ID "+relatedElementNode.asText());
-			}
 			addRelationship(documentNamespace, element.getId(), relationshipType, relatedElement);
 		}
 	}
@@ -297,7 +294,6 @@ public class JacksonDeSerializer {
             elementRelationships.put(relatedElementId, relatedElementRelationships);
             addedRelationships.put(elementId, elementRelationships);
 	    }
-	    
 		String relationshipId = store.getNextId(IdType.Anonymous, documentNamespace);
 		store.create(documentNamespace, relationshipId, SpdxConstants.CLASS_RELATIONSHIP);
 		store.setValue(documentNamespace, relationshipId, SpdxConstants.PROP_RELATIONSHIP_TYPE, relationshipType);
