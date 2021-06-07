@@ -249,9 +249,6 @@ public class JacksonDeSerializer {
 				throw new InvalidSPDXAnalysisException("Missing required related element");
 			}
 			Object relatedElement = idToObjectValue(documentNamespace, relatedElementNode.asText(), addedElements);
-			if (Objects.isNull(relatedElement)) {
-				throw new InvalidSPDXAnalysisException("Missing SPDX element for ID "+relatedElementNode.asText());
-			}
 			addRelationship(documentNamespace, element.getId(), relationshipType, relatedElement);
 		}
 	}
@@ -279,9 +276,9 @@ public class JacksonDeSerializer {
 								relationshipType.getIndividualURI().equals(((SimpleUriValue)rt.get()).getIndividualURI())) {
 							Optional<Object> compareRelatedElement = store.getValue(documentNamespace, tvNext.getId(), SpdxConstants.PROP_RELATED_SPDX_ELEMENT);
 							if (compareRelatedElement.isPresent() && 
-									relatedElement.equals(compareRelatedElement.get()) ||
+									(relatedElement.equals(compareRelatedElement.get()) ||
 									compareRelatedElement.get() instanceof TypedValue && ((TypedValue)compareRelatedElement.get()).getId().equals(relatedElement) ||
-									relatedElement instanceof TypedValue && ((TypedValue)relatedElement).getId().equals(compareRelatedElement.get())) {
+									relatedElement instanceof TypedValue && ((TypedValue)relatedElement).getId().equals(compareRelatedElement.get()))) {
 								// This would add a duplicate, just return
 								return tvNext.getId();
 							}

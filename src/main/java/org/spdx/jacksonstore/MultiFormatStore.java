@@ -164,30 +164,32 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 	public synchronized void serialize(String documentUri, OutputStream stream) throws InvalidSPDXAnalysisException, IOException {
 		JacksonSerializer serializer = new JacksonSerializer(outputMapper, format, verbose, this);
 		ObjectNode output = serializer.docToJsonNode(documentUri);
-		JsonGenerator jgen;
-		switch (format) {
-			case YAML: {
-				jgen = yamlFactory.createGenerator(stream); 
-				break;
-			}
-			case XML: {
-				jgen = outputMapper.getFactory().createGenerator(stream).useDefaultPrettyPrinter(); 
-				break;
-			}
-			case JSON: {
-				jgen = outputMapper.getFactory().createGenerator(stream);
-				break;
-			}
-			case JSON_PRETTY:
-			default:  {
-				jgen = outputMapper.getFactory().createGenerator(stream).useDefaultPrettyPrinter(); 
-				break;
-			}
-		}
+		JsonGenerator jgen = null;
 		try {
+    		switch (format) {
+    			case YAML: {
+    				jgen = yamlFactory.createGenerator(stream); 
+    				break;
+    			}
+    			case XML: {
+    				jgen = outputMapper.getFactory().createGenerator(stream).useDefaultPrettyPrinter(); 
+    				break;
+    			}
+    			case JSON: {
+    				jgen = outputMapper.getFactory().createGenerator(stream);
+    				break;
+    			}
+    			case JSON_PRETTY:
+    			default:  {
+    				jgen = outputMapper.getFactory().createGenerator(stream).useDefaultPrettyPrinter(); 
+    				break;
+    			}
+    		}
 			outputMapper.writeTree(jgen, output);
 		} finally {
-			jgen.close();
+		    if (Objects.nonNull(jgen)) {
+		        jgen.close();
+		    }
 		}
 	}
 

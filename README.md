@@ -5,6 +5,10 @@ This store supports serializing and deserializing files in JSON, YAML and XML fo
 
 This library utilizes the [SPDX Java Library Storage Interface](https://github.com/spdx/Spdx-Java-Library#storage-interface) extending the `ExtendedSpdxStore` which allows for utilizing any underlying store which implements the [SPDX Java Library Storage Interface](https://github.com/spdx/Spdx-Java-Library#storage-interface).
 
+# Code quality badges
+
+|   [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=spdx-jackson-store&metric=bugs)](https://sonarcloud.io/dashboard?id=spdx-jackson-store)    | [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=spdx-jackson-store&metric=security_rating)](https://sonarcloud.io/dashboard?id=spdx-jackson-store) | [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=spdx-jackson-store&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=spdx-jackson-store) | [![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=spdx-jackson-store&metric=sqale_index)](https://sonarcloud.io/dashboard?id=spdx-jackson-store) |
+
 # Using the Library
 
 This library is intended to be used in conjunction with the [SPDX Java Library](https://github.com/spdx/Spdx-Java-Library).
