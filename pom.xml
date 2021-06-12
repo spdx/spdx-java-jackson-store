@@ -103,7 +103,7 @@ This store supports serializing and deserializing files in JSON, YAML and XML fo
     <dependency>
     	<groupId>org.spdx</groupId>
     	<artifactId>java-spdx-library</artifactId>
-    	<version>1.0.0</version>
+    	<version>1.0.6</version>
     </dependency>
     <dependency>
     	<groupId>com.google.code.gson</groupId>
