@@ -73,6 +73,7 @@ public class JacksonDeSerializer {
 	private IModelStore store;
 	@SuppressWarnings("unused")
 	private Format format;
+	private Map<String, Map<String, Map<SimpleUriValue, String>>> addedRelationships = new HashMap<>();
 
 	/**
 	 * @param store store to store any documents in
@@ -266,39 +267,44 @@ public class JacksonDeSerializer {
 	 * @throws InvalidSPDXAnalysisException 
 	 */
 	private String addRelationship(String documentNamespace, String elementId, SimpleUriValue relationshipType, Object relatedElement) throws InvalidSPDXAnalysisException {
-		// check for duplicates
-		Iterator<Object> iter = store.listValues(documentNamespace, elementId, SpdxConstants.PROP_RELATIONSHIP);
-		while (iter.hasNext()) {
-			Object next = iter.next();
-			try {
-				if (next instanceof TypedValue) {
-					TypedValue tvNext = (TypedValue)next;
-					if (SpdxConstants.CLASS_RELATIONSHIP.equals(tvNext.getType())) {
-						Optional<Object> rt = store.getValue(documentNamespace, tvNext.getId(), SpdxConstants.PROP_RELATIONSHIP_TYPE);
-						if (rt.isPresent() && rt.get() instanceof SimpleUriValue && 
-								relationshipType.getIndividualURI().equals(((SimpleUriValue)rt.get()).getIndividualURI())) {
-							Optional<Object> compareRelatedElement = store.getValue(documentNamespace, tvNext.getId(), SpdxConstants.PROP_RELATED_SPDX_ELEMENT);
-							if (compareRelatedElement.isPresent() && 
-									relatedElement.equals(compareRelatedElement.get()) ||
-									compareRelatedElement.get() instanceof TypedValue && ((TypedValue)compareRelatedElement.get()).getId().equals(relatedElement) ||
-									relatedElement instanceof TypedValue && ((TypedValue)relatedElement).getId().equals(compareRelatedElement.get())) {
-								// This would add a duplicate, just return
-								return tvNext.getId();
-							}
-						}
-					}
-				}
-			} catch(Exception ex) {
-				// We'll just skip
-			}
-
-		}
+        String relatedElementId;
+        if (relatedElement instanceof TypedValue) {
+            relatedElementId = ((TypedValue)relatedElement).getId();
+        } else if (relatedElement instanceof String) {
+            relatedElementId = (String)relatedElement;
+        } else if (relatedElement instanceof IndividualUriValue) {
+            relatedElementId = ((IndividualUriValue)relatedElement).getIndividualURI();
+        } else {
+            throw new InvalidSPDXAnalysisException("Related element is not of an Element type for relationship to element "+elementId);
+        }
+	    // check for duplicates
+	    Map<SimpleUriValue, String> relatedElementRelationships = null;
+	    Map<String, Map<SimpleUriValue, String>> elementRelationships = addedRelationships.get(elementId);
+	    if (Objects.nonNull(elementRelationships)) {
+	        relatedElementRelationships = elementRelationships.get(relatedElementId);
+	        if (Objects.nonNull(relatedElementRelationships)) {
+	            String relationshipId = relatedElementRelationships.get(relationshipType);
+	            if (Objects.nonNull(relationshipId)) {
+	                return relationshipId;
+	            }
+	        } else {
+	            relatedElementRelationships = new HashMap<>();
+	            elementRelationships.put(relatedElementId, relatedElementRelationships);
+	        }
+	    } else {
+	        elementRelationships = new HashMap<>();
+	        relatedElementRelationships = new HashMap<>();
+            elementRelationships.put(relatedElementId, relatedElementRelationships);
+            addedRelationships.put(elementId, elementRelationships);
+	    }
+	    
 		String relationshipId = store.getNextId(IdType.Anonymous, documentNamespace);
 		store.create(documentNamespace, relationshipId, SpdxConstants.CLASS_RELATIONSHIP);
 		store.setValue(documentNamespace, relationshipId, SpdxConstants.PROP_RELATIONSHIP_TYPE, relationshipType);
 		store.setValue(documentNamespace, relationshipId, SpdxConstants.PROP_RELATED_SPDX_ELEMENT, relatedElement);
 		store.addValueToCollection(documentNamespace, elementId, SpdxConstants.PROP_RELATIONSHIP, 
 				new TypedValue(relationshipId, SpdxConstants.CLASS_RELATIONSHIP));
+		relatedElementRelationships.put(relationshipType, relationshipId);
 		return relationshipId;
 	}
 
