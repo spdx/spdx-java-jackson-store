@@ -4,7 +4,7 @@
 
   <groupId>org.spdx</groupId>
   <artifactId>spdx-jackson-store</artifactId>
-  <version>0.0.6-SNAPSHOT</version>
+  <version>1.0.0</version>
   <packaging>jar</packaging>
 
   <name>spdx-jackson-store</name>
@@ -25,6 +25,9 @@ This store supports serializing and deserializing files in JSON, YAML and XML fo
   </ciManagement>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+    <sonar.organization>spdx</sonar.organization>
+	<sonar.projectKey>spdx-jackson-store</sonar.projectKey>
   </properties>
    <licenses>
 	<license>
@@ -48,9 +51,9 @@ This store supports serializing and deserializing files in JSON, YAML and XML fo
 	</organization>
     <distributionManagement>
       <repository>
-        <id>bintray-spdx-spdx-tools</id>
+        <id>ossrh</id>
         <name>spdx-spdx-tools</name>
-        <url>https://api.bintray.com/maven/spdx/spdx-tools/java-spdx-jackson-store/;publish=1</url>
+        <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
       </repository>
 	</distributionManagement>
 	
@@ -100,7 +103,7 @@ This store supports serializing and deserializing files in JSON, YAML and XML fo
     <dependency>
     	<groupId>org.spdx</groupId>
     	<artifactId>java-spdx-library</artifactId>
-    	<version>0.0.7</version>
+    	<version>1.0.6</version>
     </dependency>
     <dependency>
     	<groupId>com.google.code.gson</groupId>
