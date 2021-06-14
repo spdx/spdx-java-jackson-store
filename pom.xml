@@ -51,9 +51,9 @@ This store supports serializing and deserializing files in JSON, YAML and XML fo
 	</organization>
     <distributionManagement>
       <repository>
-        <id>bintray-spdx-spdx-tools</id>
+        <id>ossrh</id>
         <name>spdx-spdx-tools</name>
-        <url>https://api.bintray.com/maven/spdx/spdx-tools/java-spdx-jackson-store/;publish=1</url>
+        <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
       </repository>
 	</distributionManagement>
 	
