@@ -37,6 +37,7 @@ import org.spdx.library.model.SpdxElement;
 import org.spdx.library.model.SpdxInvalidTypeException;
 import org.spdx.library.model.SpdxModelFactory;
 import org.spdx.library.model.TypedValue;
+import org.spdx.library.model.enumerations.ReferenceCategory;
 import org.spdx.library.model.enumerations.SpdxEnumFactory;
 import org.spdx.library.model.license.AnyLicenseInfo;
 import org.spdx.library.model.license.SimpleLicensingInfo;
@@ -415,7 +416,11 @@ public class JacksonSerializer {
 	private String individualUriToString(String documentUri, String uri) throws InvalidSPDXAnalysisException {
 		Object enumval = SpdxEnumFactory.uriToEnum.get(uri);
 		if (Objects.nonNull(enumval)) {
-			return enumval.toString();
+		    if (enumval instanceof ReferenceCategory) {
+		        return enumval.toString().replaceAll("_", "-");
+		    } else {
+		        return enumval.toString();
+		    }
 		} else if (SpdxConstants.EXTERNAL_SPDX_ELEMENT_URI_PATTERN.matcher(uri).matches()) {
 			ExternalSpdxElement externalElement = ExternalSpdxElement.uriToExternalSpdxElement(uri, store, documentUri, null);
 			return externalElement.getExternalDocumentId() + ":" + externalElement.getExternalElementId();

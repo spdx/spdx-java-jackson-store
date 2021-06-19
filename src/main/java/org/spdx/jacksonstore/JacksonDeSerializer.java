@@ -43,6 +43,7 @@ import org.spdx.library.model.SpdxDocument;
 import org.spdx.library.model.SpdxElement;
 import org.spdx.library.model.SpdxModelFactory;
 import org.spdx.library.model.TypedValue;
+import org.spdx.library.model.enumerations.ReferenceCategory;
 import org.spdx.library.model.enumerations.RelationshipType;
 import org.spdx.library.model.license.AnyLicenseInfo;
 import org.spdx.library.model.license.LicenseInfoFactory;
@@ -175,7 +176,7 @@ public class JacksonDeSerializer {
 		}
 		store.create(documentUri, id, type);
 		try {
-		restoreObjectPropertyValues(documentUri, id, jsonNode, spdxIdProperties);
+		    restoreObjectPropertyValues(documentUri, id, jsonNode, spdxIdProperties);
 		} catch(InvalidSPDXAnalysisException ex) {
 			// Add more information to the error message
 			throw new InvalidSPDXAnalysisException("Error parsing JSON field for ID "+id+": "+ex.getMessage(), ex);
@@ -530,9 +531,13 @@ public class JacksonDeSerializer {
 					spdxIdProperties.put(id, property);
 				}
 				return value.asText();
-			} else if (clazz.isEnum()) {
+            } else if (clazz.isEnum()) {
+                String enumValue = value.asText();
+                if (clazz.getName().equals(ReferenceCategory.class.getName())) {
+                    enumValue = enumValue.replaceAll("-", "_");
+                }
 				for (Object enumConst:clazz.getEnumConstants()) {
-					if (enumConst instanceof IndividualUriValue && value.asText().equals(enumConst.toString())) {
+					if (enumConst instanceof IndividualUriValue && enumValue.equals(enumConst.toString())) {
 						return new SimpleUriValue((IndividualUriValue)enumConst);
 					}
 				}
