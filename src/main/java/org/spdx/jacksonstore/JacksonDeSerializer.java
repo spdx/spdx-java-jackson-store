@@ -46,6 +46,7 @@ import org.spdx.library.model.TypedValue;
 import org.spdx.library.model.enumerations.RelationshipType;
 import org.spdx.library.model.license.AnyLicenseInfo;
 import org.spdx.library.model.license.LicenseInfoFactory;
+import org.spdx.library.referencetype.ListedReferenceTypes;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.IModelStore.IModelStoreLock;
 import org.spdx.storage.IModelStore.IdType;
@@ -331,8 +332,9 @@ public class JacksonDeSerializer {
 					spdxIdProperties.put(relationshipId, SpdxConstants.PROP_RELATED_SPDX_ELEMENT); // Add the SPDX ID to the list to be translated back to elements later
 				}
 
+			} else {
+			    setPropertyValueForJsonNode(documentUri, id, field.getKey(), field.getValue(), spdxIdProperties, false);
 			}
-			setPropertyValueForJsonNode(documentUri, id, field.getKey(), field.getValue(), spdxIdProperties, false);
 		}
 	}
 
@@ -486,7 +488,7 @@ public class JacksonDeSerializer {
 				// convert license expressions to their model object form
 				AnyLicenseInfo parsedLicense = LicenseInfoFactory.parseSPDXLicenseString(value.asText(), store, documentUri, null);
 				return ModelStorageClassConverter.modelObjectToStoredObject(parsedLicense, documentUri, store, null);			
-			} else if (SpdxDocument.class.isAssignableFrom(clazz) || ReferenceType.class.isAssignableFrom(clazz)) {
+			} else if (SpdxDocument.class.isAssignableFrom(clazz)) {
 				// Convert any IndividualUriValue values
 				final String uriValue = value.asText();
 				return new IndividualUriValue() {
@@ -497,7 +499,29 @@ public class JacksonDeSerializer {
 					}
 					
 				};
-			} else if (SpdxElement.class.isAssignableFrom(clazz)) {
+			} else if (ReferenceType.class.isAssignableFrom(clazz)) {
+                String referenceTypeValue = value.asText();
+                try {
+                    // First, try to find a listed type
+                    ReferenceType referenceType = ListedReferenceTypes.getListedReferenceTypes()
+                            .getListedReferenceTypeByName(referenceTypeValue);
+                    if (Objects.nonNull(referenceType)) {
+                        return referenceType;
+                    }
+                } catch (InvalidSPDXAnalysisException e) {
+                    // Ignore - fall through to using the IndividualUri
+                }
+                final String uriValue = referenceTypeValue;
+                // Check for listed reference types
+                return new IndividualUriValue() {
+
+                    @Override
+                    public String getIndividualURI() {
+                        return uriValue;
+                    }
+                    
+                };
+            } else if (SpdxElement.class.isAssignableFrom(clazz)) {
 				// store the ID and save it in the spdxIdProperties to replace with the actual class later
 				// once everything is restored
 				if (list) {

@@ -423,6 +423,8 @@ public class JacksonSerializer {
 			return SpdxConstants.NONE_VALUE;
 		} else if (SpdxConstants.URI_VALUE_NOASSERTION.equals(uri)) {
 			return SpdxConstants.NOASSERTION_VALUE;
+		} else if (uri.startsWith(SpdxConstants.SPDX_LISTED_REFERENCE_TYPES_PREFIX)) {
+		    return uri.substring(SpdxConstants.SPDX_LISTED_REFERENCE_TYPES_PREFIX.length());
 		} else {
 			return uri;
 		}
