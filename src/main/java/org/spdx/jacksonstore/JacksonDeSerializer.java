@@ -352,7 +352,8 @@ public class JacksonDeSerializer {
 			Map<String, String> spdxIdProperties, boolean list) throws InvalidSPDXAnalysisException {
 		if (SpdxJsonLDContext.getInstance().isList(property)) {
 			list = true;
-		}if (JsonNodeType.ARRAY.equals(value.getNodeType())) {
+		}
+		if (JsonNodeType.ARRAY.equals(value.getNodeType())) {
 			Iterator<JsonNode> iter = value.elements();
 			while (iter.hasNext()) {
 				setPropertyValueForJsonNode(documentUri, id, property, iter.next(), spdxIdProperties, true);

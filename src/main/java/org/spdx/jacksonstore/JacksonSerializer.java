@@ -174,8 +174,8 @@ public class JacksonSerializer {
 			if (IdType.SpdxId.equals(idType)) {
 				retval.put(SpdxConstants.SPDX_IDENTIFIER, storedItem.getId());
 			} else if (!IdType.Anonymous.equals(idType)) {
-				logger.error("Invalid ID "+storedItem.getId()+".  Must be an SPDX Identifier or Anonomous");
-				throw new InvalidSPDXAnalysisException("Invalid ID "+storedItem.getId()+".  Must be an SPDX Identifier or Anonomous");
+				logger.error("Invalid ID "+storedItem.getId()+".  Must be an SPDX Identifier or Anonymous");
+				throw new InvalidSPDXAnalysisException("Invalid ID "+storedItem.getId()+".  Must be an SPDX Identifier or Anonymous");
 			}
 		} else if (ExternalDocumentRef.class.isAssignableFrom(clazz)) {
 			retval.put(SpdxConstants.EXTERNAL_DOCUMENT_REF_IDENTIFIER, storedItem.getId());
