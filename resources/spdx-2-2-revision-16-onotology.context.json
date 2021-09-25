@@ -7,42 +7,236 @@
     "rdfpointer" : "http://www.w3.org/2009/pointers#",
     "rdfs" : "http://www.w3.org/2000/01/rdf-schema#",
     "xs" : "http://www.w3.org/2001/XMLSchema#",
+    "Document" : {
+      "@type" : "spdx:SpdxDocument",
+      "@id" : "spdx:spdxDocument"
+    },
+    "SPDXID" : "@id",
+    "externalDocumentId" : {
+      "@id" : "spdx:externalDocumentId",
+      "@type" : "xs:anyURI"
+    },
+    "algorithm" : {
+      "@id" : "spdx:algorithm",
+      "@type" : "spdx:ChecksumAlgorithm"
+    },
+    "annotations" : {
+      "@id" : "spdx:annotations",
+      "@type" : "spdx:Annotation",
+      "@container" : "@set"
+    },
+    "annotationDate" : {
+      "@id" : "spdx:annotationDate",
+      "@type" : "xs:dateTime"
+    },
+    "annotationType" : {
+      "@id" : "spdx:annotationType",
+      "@type" : "spdx:AnnotationType"
+    },
+    "annotator" : {
+      "@id" : "spdx:annotator",
+      "@type" : "xs:string"
+    },
+    "artifactOfs" : {
+      "@id" : "spdx:artifactOfs",
+      "@type" : "doap:Project",
+      "@container" : "@set"
+    },
+    "attributionTexts" : {
+      "@id" : "spdx:attributionTexts",
+      "@type" : "xs:string",
+      "@container" : "@set"
+    },
+    "checksums" : {
+      "@id" : "spdx:checksums",
+      "@type" : "spdx:Checksum",
+      "@container" : "@set"
+    },
+    "checksum" : {
+      "@id" : "spdx:checksum",
+      "@type" : "spdx:Checksum"
+    },
+    "checksumValue" : {
+      "@id" : "spdx:checksumValue",
+      "@type" : "xs:hexBinary"
+    },
+    "comment" : {
+      "@id" : "rdfs:comment",
+      "@type" : "xs:string"
+    },
+    "contextualExample" : {
+      "@id" : "spdx:contextualExample",
+      "@type" : "xs:anyURI"
+    },
+    "copyrightText" : {
+      "@id" : "spdx:copyrightText",
+      "@type" : "xs:string"
+    },
+    "created" : {
+      "@id" : "spdx:created",
+      "@type" : "xs:dateTime"
+    },
+    "creationInfo" : {
+      "@id" : "spdx:creationInfo",
+      "@type" : "spdx:CreationInfo"
+    },
+    "creators" : {
+      "@id" : "spdx:creators",
+      "@type" : "xs:string",
+      "@container" : "@set"
+    },
+    "crossRefs" : {
+      "@id" : "spdx:crossRefs",
+      "@type" : "spdx:CrossRef",
+      "@container" : "@set"
+    },
+    "dataLicense" : {
+      "@id" : "spdx:dataLicense",
+      "@type" : "spdx:AnyLicenseInfo"
+    },
+    "deprecatedVersion" : {
+      "@id" : "spdx:deprecatedVersion",
+      "@type" : "xs:string"
+    },
+    "describesPackages" : {
+      "@id" : "spdx:describesPackages",
+      "@type" : "spdx:Package",
+      "@container" : "@set"
+    },
+    "description" : {
+      "@id" : "spdx:description",
+      "@type" : "xs:string"
+    },
+    "documentation" : {
+      "@id" : "spdx:documentation",
+      "@type" : "xs:anyURI"
+    },
+    "downloadLocation" : {
+      "@id" : "spdx:downloadLocation",
+      "@type" : "xs:anyURI"
+    },
+    "endPointer" : {
+      "@id" : "rdfpointer:endPointer",
+      "@type" : "rdfpointer:SinglePointer"
+    },
+    "example" : {
+      "@id" : "spdx:example",
+      "@type" : "xs:string"
+    },
+    "exceptionTextHtml" : {
+      "@id" : "spdx:exceptionTextHtml",
+      "@type" : "xs:string"
+    },
+    "externalDocumentRefs" : {
+      "@id" : "spdx:externalDocumentRefs",
+      "@type" : "spdx:ExternalDocumentRef",
+      "@container" : "@set"
+    },
+    "externalRefs" : {
+      "@id" : "spdx:externalRefs",
+      "@type" : "spdx:ExternalRef",
+      "@container" : "@set"
+    },
+    "externalReferenceSite" : {
+      "@id" : "spdx:externalReferenceSite",
+      "@type" : "xs:anyURI"
+    },
+    "extractedText" : {
+      "@id" : "spdx:extractedText",
+      "@type" : "xs:string"
+    },
+    "fileContributors" : {
+      "@id" : "spdx:fileContributors",
+      "@type" : "xs:string",
+      "@container" : "@set"
+    },
+    "fileDependencies" : {
+      "@id" : "spdx:fileDependencies",
+      "@type" : "spdx:File",
+      "@container" : "@set"
+    },
+    "fileName" : {
+      "@id" : "spdx:fileName",
+      "@type" : "xs:string"
+    },
+    "fileTypes" : {
+      "@id" : "spdx:fileTypes",
+      "@type" : "spdx:FileType",
+      "@container" : "@set"
+    },
+    "filesAnalyzed" : {
+      "@id" : "spdx:filesAnalyzed",
+      "@type" : "xs:boolean"
+    },
+    "hasExtractedLicensingInfos" : {
+      "@id" : "spdx:hasExtractedLicensingInfos",
+      "@type" : "spdx:ExtractedLicensingInfo",
+      "@container" : "@set"
+    },
+    "hasFiles" : {
+      "@id" : "spdx:hasFiles",
+      "@type" : "spdx:File",
+      "@container" : "@set"
+    },
+    "homepage" : {
+      "@id" : "doap:homepage",
+      "@type" : "xs:anyURI"
+    },
+    "isDeprecatedLicenseId" : {
+      "@id" : "spdx:isDeprecatedLicenseId",
+      "@type" : "xs:boolean"
+    },
+    "isFsfLibre" : {
+      "@id" : "spdx:isFsfLibre",
+      "@type" : "xs:boolean"
+    },
+    "isLive" : {
+      "@id" : "spdx:isLive",
+      "@type" : "xs:boolean"
+    },
+    "isOsiApproved" : {
+      "@id" : "spdx:isOsiApproved",
+      "@type" : "xs:boolean"
+    },
+    "isValid" : {
+      "@id" : "spdx:isValid",
+      "@type" : "xs:boolean"
+    },
+    "isWayBackLink" : {
+      "@id" : "spdx:isWayBackLink",
+      "@type" : "xs:boolean"
+    },
+    "licenseComments" : {
+      "@id" : "spdx:licenseComments",
+      "@type" : "xs:string"
+    },
     "licenseConcluded" : {
       "@id" : "spdx:licenseConcluded",
+      "@type" : "spdx:AnyLicenseInfo"
+    },
+    "licenseDeclared" : {
+      "@id" : "spdx:licenseDeclared",
       "@type" : "spdx:AnyLicenseInfo"
     },
     "licenseException" : {
       "@id" : "spdx:licenseException",
       "@type" : "spdx:LicenseException"
     },
-    "referenceType" : {
-      "@id" : "spdx:referenceType",
-      "@type" : "spdx:ReferenceType"
+    "licenseExceptionId" : {
+      "@id" : "spdx:licenseExceptionId",
+      "@type" : "xs:string"
     },
-    "packageVerificationCode" : {
-      "@id" : "spdx:packageVerificationCode",
-      "@type" : "spdx:PackageVerificationCode"
+    "licenseExceptionTemplate" : {
+      "@id" : "spdx:licenseExceptionTemplate",
+      "@type" : "xs:string"
     },
-    "dataLicense" : {
-      "@id" : "spdx:dataLicense",
-      "@type" : "spdx:AnyLicenseInfo"
+    "licenseExceptionText" : {
+      "@id" : "spdx:licenseExceptionText",
+      "@type" : "xs:string"
     },
-    "members" : {
-      "@id" : "spdx:members",
-      "@type" : "spdx:AnyLicenseInfo",
-      "@container" : "@set"
-    },
-    "member" : {
-      "@id" : "spdx:member",
-      "@type" : "spdx:AnyLicenseInfo"
-    },
-    "algorithm" : {
-      "@id" : "spdx:algorithm",
-      "@type" : "spdx:ChecksumAlgorithm"
-    },
-    "relatedSpdxElement" : {
-      "@id" : "spdx:relatedSpdxElement",
-      "@type" : "spdx:SpdxElement"
+    "licenseId" : {
+      "@id" : "spdx:licenseId",
+      "@type" : "xs:string"
     },
     "licenseInfoFromFiles" : {
       "@id" : "spdx:licenseInfoFromFiles",
@@ -59,204 +253,8 @@
       "@type" : "spdx:AnyLicenseInfo",
       "@container" : "@set"
     },
-    "annotations" : {
-      "@id" : "spdx:annotations",
-      "@type" : "spdx:Annotation",
-      "@container" : "@set"
-    },
-    "crossRefs" : {
-      "@id" : "spdx:crossRefs",
-      "@type" : "spdx:CrossRef",
-      "@container" : "@set"
-    },
-    "externalDocumentRefs" : {
-      "@id" : "spdx:externalDocumentRefs",
-      "@type" : "spdx:ExternalDocumentRef",
-      "@container" : "@set"
-    },
-    "startPointer" : {
-      "@id" : "rdfpointer:startPointer",
-      "@type" : "rdfpointer:SinglePointer"
-    },
-    "reference" : {
-      "@id" : "rdfpointer:reference",
-      "@type" : "spdx:File"
-    },
-    "revieweds" : {
-      "@id" : "spdx:revieweds",
-      "@type" : "spdx:Review",
-      "@container" : "@set"
-    },
-    "creationInfo" : {
-      "@id" : "spdx:creationInfo",
-      "@type" : "spdx:CreationInfo"
-    },
-    "checksums" : {
-      "@id" : "spdx:checksums",
-      "@type" : "spdx:Checksum",
-      "@container" : "@set"
-    },
-    "checksum" : {
-      "@id" : "spdx:checksum",
-      "@type" : "spdx:Checksum"
-    },
-    "annotationType" : {
-      "@id" : "spdx:annotationType",
-      "@type" : "spdx:AnnotationType"
-    },
-    "describesPackages" : {
-      "@id" : "spdx:describesPackages",
-      "@type" : "spdx:Package",
-      "@container" : "@set"
-    },
-    "relationshipType" : {
-      "@id" : "spdx:relationshipType",
-      "@type" : "spdx:RelationshipType"
-    },
-    "hasExtractedLicensingInfos" : {
-      "@id" : "spdx:hasExtractedLicensingInfos",
-      "@type" : "spdx:ExtractedLicensingInfo",
-      "@container" : "@set"
-    },
-    "spdxDocument" : {
-      "@id" : "spdx:spdxDocument",
-      "@type" : "spdx:SpdxDocument"
-    },
-    "artifactOfs" : {
-      "@id" : "spdx:artifactOfs",
-      "@type" : "doap:Project",
-      "@container" : "@set"
-    },
-    "snippetFromFile" : {
-      "@id" : "spdx:snippetFromFile",
-      "@type" : "spdx:File"
-    },
-    "referenceCategory" : {
-      "@id" : "spdx:referenceCategory",
-      "@type" : "spdx:ReferenceCategory"
-    },
-    "ranges" : {
-      "@id" : "spdx:ranges",
-      "@type" : "rdfpointer:StartEndPointer",
-      "@container" : "@set"
-    },
-    "externalRefs" : {
-      "@id" : "spdx:externalRefs",
-      "@type" : "spdx:ExternalRef",
-      "@container" : "@set"
-    },
-    "endPointer" : {
-      "@id" : "rdfpointer:endPointer",
-      "@type" : "rdfpointer:SinglePointer"
-    },
-    "relationships" : {
-      "@id" : "spdx:relationships",
-      "@type" : "spdx:Relationship",
-      "@container" : "@set"
-    },
-    "fileTypes" : {
-      "@id" : "spdx:fileTypes",
-      "@type" : "spdx:FileType",
-      "@container" : "@set"
-    },
-    "licenseDeclared" : {
-      "@id" : "spdx:licenseDeclared",
-      "@type" : "spdx:AnyLicenseInfo"
-    },
-    "hasFiles" : {
-      "@id" : "spdx:hasFiles",
-      "@type" : "spdx:File",
-      "@container" : "@set"
-    },
-    "fileDependencies" : {
-      "@id" : "spdx:fileDependencies",
-      "@type" : "spdx:File",
-      "@container" : "@set"
-    },
-    "sourceInfo" : {
-      "@id" : "spdx:sourceInfo",
-      "@type" : "xs:string"
-    },
-    "noticeText" : {
-      "@id" : "spdx:noticeText",
-      "@type" : "xs:string"
-    },
-    "standardLicenseTemplate" : {
-      "@id" : "spdx:standardLicenseTemplate",
-      "@type" : "xs:string"
-    },
-    "name" : {
-      "@id" : "spdx:name",
-      "@type" : "xs:string"
-    },
-    "checksumValue" : {
-      "@id" : "spdx:checksumValue",
-      "@type" : "xs:hexBinary"
-    },
-    "extractedText" : {
-      "@id" : "spdx:extractedText",
-      "@type" : "xs:string"
-    },
-    "standardLicenseHeader" : {
-      "@id" : "spdx:standardLicenseHeader",
-      "@type" : "xs:string"
-    },
-    "reviewer" : {
-      "@id" : "spdx:reviewer",
-      "@type" : "xs:string"
-    },
     "licenseListVersion" : {
       "@id" : "spdx:licenseListVersion",
-      "@type" : "xs:string"
-    },
-    "documentation" : {
-      "@id" : "spdx:documentation",
-      "@type" : "xs:anyURI"
-    },
-    "match" : {
-      "@id" : "spdx:match",
-      "@type" : "xs:string"
-    },
-    "packageVerificationCodeExcludedFiles" : {
-      "@id" : "spdx:packageVerificationCodeExcludedFiles",
-      "@type" : "xs:string",
-      "@container" : "@set"
-    },
-    "fileName" : {
-      "@id" : "spdx:fileName",
-      "@type" : "xs:string"
-    },
-    "order" : {
-      "@id" : "spdx:order",
-      "@type" : "xs:nonNegativeInteger"
-    },
-    "isValid" : {
-      "@id" : "spdx:isValid",
-      "@type" : "xs:boolean"
-    },
-    "attributionTexts" : {
-      "@id" : "spdx:attributionTexts",
-      "@type" : "xs:string",
-      "@container" : "@set"
-    },
-    "copyrightText" : {
-      "@id" : "spdx:copyrightText",
-      "@type" : "xs:string"
-    },
-    "spdxVersion" : {
-      "@id" : "spdx:spdxVersion",
-      "@type" : "xs:string"
-    },
-    "deprecatedVersion" : {
-      "@id" : "spdx:deprecatedVersion",
-      "@type" : "xs:string"
-    },
-    "isFsfLibre" : {
-      "@id" : "spdx:isFsfLibre",
-      "@type" : "xs:boolean"
-    },
-    "comment" : {
-      "@id" : "rdfs:comment",
       "@type" : "xs:string"
     },
     "licenseText" : {
@@ -267,162 +265,158 @@
       "@id" : "spdx:licenseTextHtml",
       "@type" : "xs:string"
     },
-    "licenseExceptionTemplate" : {
-      "@id" : "spdx:licenseExceptionTemplate",
-      "@type" : "xs:string"
-    },
-    "exceptionTextHtml" : {
-      "@id" : "spdx:exceptionTextHtml",
-      "@type" : "xs:string"
-    },
-    "description" : {
-      "@id" : "spdx:description",
-      "@type" : "xs:string"
-    },
-    "isLive" : {
-      "@id" : "spdx:isLive",
-      "@type" : "xs:boolean"
-    },
-    "seeAlsos" : {
-      "@id" : "rdfs:seeAlsos",
-      "@type" : "xs:string",
-      "@container" : "@set"
-    },
-    "licenseExceptionText" : {
-      "@id" : "spdx:licenseExceptionText",
-      "@type" : "xs:string"
-    },
-    "contextualExample" : {
-      "@id" : "spdx:contextualExample",
-      "@type" : "xs:anyURI"
-    },
-    "summary" : {
-      "@id" : "spdx:summary",
-      "@type" : "xs:string"
-    },
-    "externalReferenceSite" : {
-      "@id" : "spdx:externalReferenceSite",
-      "@type" : "xs:anyURI"
-    },
-    "filesAnalyzed" : {
-      "@id" : "spdx:filesAnalyzed",
-      "@type" : "xs:boolean"
-    },
-    "versionInfo" : {
-      "@id" : "spdx:versionInfo",
-      "@type" : "xs:string"
-    },
-    "created" : {
-      "@id" : "spdx:created",
-      "@type" : "xs:dateTime"
-    },
     "lineNumber" : {
       "@id" : "rdfpointer:lineNumber",
       "@type" : "xs:positiveInteger"
+    },
+    "match" : {
+      "@id" : "spdx:match",
+      "@type" : "xs:string"
+    },
+    "name" : {
+      "@id" : "spdx:name",
+      "@type" : "xs:string"
+    },
+    "noticeText" : {
+      "@id" : "spdx:noticeText",
+      "@type" : "xs:string"
     },
     "offset" : {
       "@id" : "rdfpointer:offset",
       "@type" : "xs:positiveInteger"
     },
-    "isWayBackLink" : {
-      "@id" : "spdx:isWayBackLink",
-      "@type" : "xs:boolean"
+    "order" : {
+      "@id" : "spdx:order",
+      "@type" : "xs:nonNegativeInteger"
     },
-    "timestamp" : {
-      "@id" : "spdx:timestamp",
-      "@type" : "xs:dateTime"
-    },
-    "annotationDate" : {
-      "@id" : "spdx:annotationDate",
-      "@type" : "xs:dateTime"
-    },
-    "example" : {
-      "@id" : "spdx:example",
-      "@type" : "xs:string"
-    },
-    "fileContributors" : {
-      "@id" : "spdx:fileContributors",
-      "@type" : "xs:string",
-      "@container" : "@set"
-    },
-    "licenseId" : {
-      "@id" : "spdx:licenseId",
-      "@type" : "xs:string"
-    },
-    "url" : {
-      "@id" : "spdx:url",
-      "@type" : "xs:anyURI"
-    },
-    "referenceLocator" : {
-      "@id" : "spdx:referenceLocator",
-      "@type" : "xs:anyURI"
-    },
-    "packageVerificationCodeValue" : {
-      "@id" : "spdx:packageVerificationCodeValue",
-      "@type" : "xs:hexBinary"
-    },
-    "isDeprecatedLicenseId" : {
-      "@id" : "spdx:isDeprecatedLicenseId",
-      "@type" : "xs:boolean"
-    },
-    "homepage" : {
-      "@id" : "doap:homepage",
-      "@type" : "xs:anyURI"
-    },
-    "supplier" : {
-      "@id" : "spdx:supplier",
-      "@type" : "xs:string"
-    },
-    "reviewDate" : {
-      "@id" : "spdx:reviewDate",
-      "@type" : "xs:dateTime"
-    },
-    "licenseExceptionId" : {
-      "@id" : "spdx:licenseExceptionId",
-      "@type" : "xs:string"
-    },
-    "standardLicenseHeaderTemplate" : {
-      "@id" : "spdx:standardLicenseHeaderTemplate",
+    "originator" : {
+      "@id" : "spdx:originator",
       "@type" : "xs:string"
     },
     "packageFileName" : {
       "@id" : "spdx:packageFileName",
       "@type" : "xs:string"
     },
+    "packageVerificationCode" : {
+      "@id" : "spdx:packageVerificationCode",
+      "@type" : "spdx:PackageVerificationCode"
+    },
+    "packageVerificationCodeExcludedFiles" : {
+      "@id" : "spdx:packageVerificationCodeExcludedFiles",
+      "@type" : "xs:string",
+      "@container" : "@set"
+    },
+    "packageVerificationCodeValue" : {
+      "@id" : "spdx:packageVerificationCodeValue",
+      "@type" : "xs:hexBinary"
+    },
+    "ranges" : {
+      "@id" : "spdx:ranges",
+      "@type" : "rdfpointer:StartEndPointer",
+      "@container" : "@set"
+    },
+    "reference" : {
+      "@id" : "rdfpointer:reference",
+      "@type" : "spdx:File"
+    },
+    "referenceCategory" : {
+      "@id" : "spdx:referenceCategory",
+      "@type" : "spdx:ReferenceCategory"
+    },
+    "referenceLocator" : {
+      "@id" : "spdx:referenceLocator",
+      "@type" : "xs:anyURI"
+    },
+    "referenceType" : {
+      "@id" : "spdx:referenceType",
+      "@type" : "spdx:ReferenceType"
+    },
+    "relatedSpdxElement" : {
+      "@id" : "spdx:relatedSpdxElement",
+      "@type" : "spdx:SpdxElement"
+    },
+    "relationships" : {
+      "@id" : "spdx:relationships",
+      "@type" : "spdx:Relationship",
+      "@container" : "@set"
+    },
+    "relationshipType" : {
+      "@id" : "spdx:relationshipType",
+      "@type" : "spdx:RelationshipType"
+    },
+    "reviewDate" : {
+      "@id" : "spdx:reviewDate",
+      "@type" : "xs:dateTime"
+    },
+    "revieweds" : {
+      "@id" : "spdx:revieweds",
+      "@type" : "spdx:Review",
+      "@container" : "@set"
+    },
+    "reviewer" : {
+      "@id" : "spdx:reviewer",
+      "@type" : "xs:string"
+    },
+    "seeAlsos" : {
+      "@id" : "rdfs:seeAlsos",
+      "@type" : "xs:string",
+      "@container" : "@set"
+    },
+    "snippetFromFile" : {
+      "@id" : "spdx:snippetFromFile",
+      "@type" : "spdx:File"
+    },
+    "sourceInfo" : {
+      "@id" : "spdx:sourceInfo",
+      "@type" : "xs:string"
+    },
+    "spdxDocument" : {
+      "@id" : "spdx:spdxDocument",
+      "@type" : "spdx:SpdxDocument"
+    },
+    "spdxVersion" : {
+      "@id" : "spdx:spdxVersion",
+      "@type" : "xs:string"
+    },
+    "standardLicenseHeader" : {
+      "@id" : "spdx:standardLicenseHeader",
+      "@type" : "xs:string"
+    },
     "standardLicenseHeaderHtml" : {
       "@id" : "spdx:standardLicenseHeaderHtml",
       "@type" : "xs:string"
     },
-    "licenseComments" : {
-      "@id" : "spdx:licenseComments",
+    "standardLicenseHeaderTemplate" : {
+      "@id" : "spdx:standardLicenseHeaderTemplate",
       "@type" : "xs:string"
     },
-    "downloadLocation" : {
-      "@id" : "spdx:downloadLocation",
+    "standardLicenseTemplate" : {
+      "@id" : "spdx:standardLicenseTemplate",
+      "@type" : "xs:string"
+    },
+    "startPointer" : {
+      "@id" : "rdfpointer:startPointer",
+      "@type" : "rdfpointer:SinglePointer"
+    },
+    "summary" : {
+      "@id" : "spdx:summary",
+      "@type" : "xs:string"
+    },
+    "supplier" : {
+      "@id" : "spdx:supplier",
+      "@type" : "xs:string"
+    },
+    "timestamp" : {
+      "@id" : "spdx:timestamp",
+      "@type" : "xs:dateTime"
+    },
+    "url" : {
+      "@id" : "spdx:url",
       "@type" : "xs:anyURI"
     },
-    "originator" : {
-      "@id" : "spdx:originator",
+    "versionInfo" : {
+      "@id" : "spdx:versionInfo",
       "@type" : "xs:string"
-    },
-    "externalDocumentId" : "@id",
-    "creators" : {
-      "@id" : "spdx:creators",
-      "@type" : "xs:string",
-      "@container" : "@set"
-    },
-    "annotator" : {
-      "@id" : "spdx:annotator",
-      "@type" : "xs:string"
-    },
-    "isOsiApproved" : {
-      "@id" : "spdx:isOsiApproved",
-      "@type" : "xs:boolean"
-    },
-    "Document" : {
-      "@type" : "spdx:SpdxDocument",
-      "@id" : "spdx:spdxDocument"
-    },
-    "SPDXID" : "@id"
+    }
   }
 }
