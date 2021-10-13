@@ -21,11 +21,11 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-import org.spdx.jacksonstore.MultiFormatStore;
 import org.spdx.jacksonstore.MultiFormatStore.Format;
 import org.spdx.library.InvalidSPDXAnalysisException;
 import org.spdx.library.model.SpdxDocument;
@@ -42,7 +42,8 @@ import junit.framework.TestCase;
 public class MultiFormatStoreTest extends TestCase {
 	
 	static final String JSON_FILE_PATH = "testResources" + File.separator + "SPDXJSONExample-v2.2.spdx.json";
-
+	// This is a copy of SPDXJSONExample-v2.2.spdx.json with relationships property renamed to relationship
+	static final String SINGULAR_RELATIONSHIP_FILE_PATH = "testResources" + File.separator + "SingularRelationship.json";
 	/* (non-Javadoc)
 	 * @see junit.framework.TestCase#setUp()
 	 */
@@ -167,6 +168,18 @@ public class MultiFormatStoreTest extends TestCase {
 		assertTrue(comparer.isDocumentRelationshipsEquals());
 		assertFalse(comparer.isDifferenceFound());
 		assertTrue(inputDocument.equivalent(compareDocument));
+	}
+	
+	// Test for issue #21 Validation accepts invalid SPDX YAML files
+	public void testSingularRelationship() throws FileNotFoundException, IOException, InvalidSPDXAnalysisException {
+	    File jsonFile = new File(SINGULAR_RELATIONSHIP_FILE_PATH);
+        MultiFormatStore inputStore = new MultiFormatStore(new InMemSpdxStore(), Format.JSON_PRETTY);
+        try (InputStream input = new FileInputStream(jsonFile)) {
+            inputStore.deSerialize(input, false);
+            fail("Singular relationship property should not succeed");
+        } catch(InvalidSPDXAnalysisException ex) {
+            // expected
+        }
 	}
 
 }
