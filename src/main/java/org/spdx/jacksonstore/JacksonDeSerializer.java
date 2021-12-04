@@ -322,13 +322,17 @@ public class JacksonDeSerializer {
 				continue;
 			} else if (SpdxConstants.PROP_DOCUMENT_DESCRIBES.equals(field.getKey())) {
 				// These needs to be converted to a DocumentDescribes relationship
-				if (!(field.getValue() instanceof ArrayNode)) {
-					throw new InvalidSPDXAnalysisException("Document Describes is not an array - invalid JSON format");
-				}
-				for (JsonNode describes:((ArrayNode)field.getValue())) {		
+				if ((field.getValue() instanceof ArrayNode)) {
+					for (JsonNode describes:((ArrayNode)field.getValue())) {		
+						String relationshipId = addRelationship(documentUri, id, 
+								new SimpleUriValue(RelationshipType.DESCRIBES.getIndividualURI()), 
+								describes.asText());
+						spdxIdProperties.put(relationshipId, SpdxConstants.PROP_RELATED_SPDX_ELEMENT); // Add the SPDX ID to the list to be translated back to elements later
+					}					
+				} else {
 					String relationshipId = addRelationship(documentUri, id, 
 							new SimpleUriValue(RelationshipType.DESCRIBES.getIndividualURI()), 
-							describes.asText());
+							field.getValue().asText());
 					spdxIdProperties.put(relationshipId, SpdxConstants.PROP_RELATED_SPDX_ELEMENT); // Add the SPDX ID to the list to be translated back to elements later
 				}
 
