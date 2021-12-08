@@ -44,6 +44,9 @@ public class MultiFormatStoreTest extends TestCase {
 	static final String JSON_FILE_PATH = "testResources" + File.separator + "SPDXJSONExample-v2.2.spdx.json";
 	// This is a copy of SPDXJSONExample-v2.2.spdx.json with relationships property renamed to relationship
 	static final String SINGULAR_RELATIONSHIP_FILE_PATH = "testResources" + File.separator + "SingularRelationship.json";
+	// This is a copy of SPDXJSONExample-v2.2.spdx.json with duplicate hasFile/CONTAINS relationships and duplicate documentDescribes/DESCRIBES relationship
+	static final String JSON_WITH_DUPLICATES_FILE_PATH = "testResources" + File.separator + "duplicated.json";
+	static final String JSON_NO_HAS_FILES_FILE_PATH = "testResources" + File.separator + "noHasFilesDescribes.json";
 	/* (non-Javadoc)
 	 * @see junit.framework.TestCase#setUp()
 	 */
@@ -180,6 +183,64 @@ public class MultiFormatStoreTest extends TestCase {
         } catch(InvalidSPDXAnalysisException ex) {
             // expected
         }
+	}
+	
+	public void testDuplicates() throws FileNotFoundException, IOException, InvalidSPDXAnalysisException, SpdxCompareException {
+		File jsonFile = new File(JSON_FILE_PATH);
+		MultiFormatStore inputStore = new MultiFormatStore(new InMemSpdxStore(), Format.JSON_PRETTY);
+		try (InputStream input = new FileInputStream(jsonFile)) {
+			inputStore.deSerialize(input, false);
+		}
+		String documentUri = inputStore.getDocumentUris().get(0);
+		SpdxDocument inputDocument = new SpdxDocument(inputStore, documentUri, null, false);
+		List<String> verify = inputDocument.verify();
+		assertEquals(0, verify.size());
+		
+		File jsonFileWithDuplicates = new File(JSON_WITH_DUPLICATES_FILE_PATH);
+		MultiFormatStore compareStore = new MultiFormatStore(new InMemSpdxStore(), Format.JSON_PRETTY);
+		try (InputStream input = new FileInputStream(jsonFileWithDuplicates)) {
+			compareStore.deSerialize(input, false);
+		}
+		SpdxDocument compareDocument = new SpdxDocument(compareStore, documentUri, null, false);
+		verify = compareDocument.verify();
+		assertEquals(0, verify.size());
+		
+		SpdxComparer comparer = new SpdxComparer();
+		comparer.compare(inputDocument, compareDocument);
+		assertTrue(comparer.isfilesEquals());
+		assertTrue(comparer.isPackagesEquals());
+		assertTrue(comparer.isDocumentRelationshipsEquals());
+		assertFalse(comparer.isDifferenceFound());
+		assertTrue(inputDocument.equivalent(compareDocument));
+	}
+	
+	public void testNoHasFiles() throws FileNotFoundException, IOException, InvalidSPDXAnalysisException, SpdxCompareException {
+		File jsonFile = new File(JSON_FILE_PATH);
+		MultiFormatStore inputStore = new MultiFormatStore(new InMemSpdxStore(), Format.JSON_PRETTY);
+		try (InputStream input = new FileInputStream(jsonFile)) {
+			inputStore.deSerialize(input, false);
+		}
+		String documentUri = inputStore.getDocumentUris().get(0);
+		SpdxDocument inputDocument = new SpdxDocument(inputStore, documentUri, null, false);
+		List<String> verify = inputDocument.verify();
+		assertEquals(0, verify.size());
+		
+		File jsonNoHasFiles = new File(JSON_NO_HAS_FILES_FILE_PATH);
+		MultiFormatStore compareStore = new MultiFormatStore(new InMemSpdxStore(), Format.JSON_PRETTY);
+		try (InputStream input = new FileInputStream(jsonNoHasFiles)) {
+			compareStore.deSerialize(input, false);
+		}
+		SpdxDocument compareDocument = new SpdxDocument(compareStore, documentUri, null, false);
+		verify = compareDocument.verify();
+		assertEquals(0, verify.size());
+		
+		SpdxComparer comparer = new SpdxComparer();
+		comparer.compare(inputDocument, compareDocument);
+		assertTrue(comparer.isfilesEquals());
+		assertTrue(comparer.isPackagesEquals());
+		assertTrue(comparer.isDocumentRelationshipsEquals());
+		assertFalse(comparer.isDifferenceFound());
+		assertTrue(inputDocument.equivalent(compareDocument));
 	}
 
 }

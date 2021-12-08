@@ -18,11 +18,12 @@
 package org.spdx.jacksonstore;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +38,7 @@ import org.spdx.library.model.SpdxElement;
 import org.spdx.library.model.SpdxInvalidTypeException;
 import org.spdx.library.model.SpdxModelFactory;
 import org.spdx.library.model.TypedValue;
+import org.spdx.library.model.enumerations.RelationshipType;
 import org.spdx.library.model.enumerations.SpdxEnumFactory;
 import org.spdx.library.model.license.AnyLicenseInfo;
 import org.spdx.library.model.license.SimpleLicensingInfo;
@@ -112,8 +114,6 @@ public class JacksonSerializer {
 			ArrayNode relationships = mapper.createArrayNode();
 			ObjectNode doc = typedValueToObjectNode(documentUri, document, relationships);
 			doc.put(SpdxConstants.PROP_DOCUMENT_NAMESPACE, documentUri);
-			ArrayNode documentDescribes = getDocumentDescribes(relationships);
-			doc.set(SpdxConstants.PROP_DOCUMENT_DESCRIBES, documentDescribes);
 			ArrayNode packages = getDocElements(documentUri, SpdxConstants.CLASS_SPDX_PACKAGE, relationships);
 			if (packages.size() > 0) {
 				doc.set(SpdxConstants.PROP_DOCUMENT_PACKAGES, packages);
@@ -163,11 +163,13 @@ public class JacksonSerializer {
 	 * @return ObjectNode with all fields added from the stored typedValue
 	 * @throws InvalidSPDXAnalysisException 
 	 */
-	private ObjectNode typedValueToObjectNode(String documentUri, TypedValue storedItem, ArrayNode relationships) throws InvalidSPDXAnalysisException {
+	private ObjectNode typedValueToObjectNode(String documentUri, TypedValue storedItem, 
+			ArrayNode relationships) throws InvalidSPDXAnalysisException {
 		ObjectNode retval = mapper.createObjectNode();
+		Set<String> hasFileIds = new HashSet<>(); // keep track of any hasFile properties added to avoid duplicates
+		Set<String> documentDescribesIds = new HashSet<>(); // keep track of any documentDescribes properties added to avoid duplicates
 		List<String> docPropNames = new ArrayList<String>(store.getPropertyValueNames(documentUri, storedItem.getId()));
 		docPropNames.sort(new PropertyComparator(storedItem.getType()));
-		//TODO - do we sort for all types or just for the document level?
 		Class<?> clazz = SpdxModelFactory.SPDX_TYPE_TO_CLASS.get(storedItem.getType());
 		IdType idType = store.getIdType(storedItem.getId());
 		if (SpdxElement.class.isAssignableFrom(clazz)) {
@@ -184,15 +186,52 @@ public class JacksonSerializer {
 		}
 		for (String propertyName:docPropNames) {
 			if (SpdxConstants.PROP_RELATIONSHIP.equals(propertyName)) {
-				for (ObjectNode relationship:toJsonRelationships(documentUri, storedItem.getId(), store.listValues(documentUri, storedItem.getId(), SpdxConstants.PROP_RELATIONSHIP))) {
-					relationships.add(relationship);
-				}
+				addJsonRelationships(documentUri, storedItem, retval, relationships, hasFileIds, documentDescribesIds);
 			} else if (SpdxConstants.PROP_SPDX_EXTRACTED_LICENSES.equals(propertyName)) {
 				retval.set(MultiFormatStore.propertyNameToCollectionPropertyName(propertyName), 
 						toExtractedLicensesArrayNode(documentUri, storedItem.getId(), propertyName, relationships));
 			} else if (store.isCollectionProperty(documentUri, storedItem.getId(), propertyName)) {
-				ArrayNode valuesArray = toArrayNode(documentUri, store.listValues(documentUri, storedItem.getId(), propertyName), 
-						relationships);
+				Iterator<Object> propertyValues = store.listValues(documentUri, storedItem.getId(), propertyName);
+				ArrayNode valuesArray;
+				if (SpdxConstants.PROP_PACKAGE_FILE.equals(propertyName) && hasFileIds.size() > 0) {
+					// Need to filter out existing hasFileIds
+					List<Object> hasFilesToAdd = new ArrayList<>();
+					while (propertyValues.hasNext()) {
+						Object fileToAdd = propertyValues.next();
+						if (fileToAdd instanceof TypedValue) {
+							String fileToAddId = ((TypedValue)fileToAdd).getId();
+							if (!hasFileIds.contains(fileToAddId)) {
+								hasFilesToAdd.add(fileToAdd);
+								hasFileIds.add(fileToAddId);
+							}
+						} else {
+							hasFilesToAdd.add(fileToAdd);
+						}
+					}
+					valuesArray = toArrayNode(documentUri, hasFilesToAdd.iterator(), 
+							relationships);
+					
+				} else if (SpdxConstants.PROP_DOCUMENT_DESCRIBES.equals(propertyName) && documentDescribesIds.size() > 0) {
+					// Need to filter out existing documentDescribes
+					List<Object> describesToAdd = new ArrayList<>();
+					while (propertyValues.hasNext()) {
+						Object describedElementToAdd = propertyValues.next();
+						if (describedElementToAdd instanceof TypedValue) {
+							String describedElementToAddId = ((TypedValue)describedElementToAdd).getId();
+							if (!hasFileIds.contains(describedElementToAddId)) {
+								describesToAdd.add(describedElementToAdd);
+								hasFileIds.add(describedElementToAddId);
+							}
+						} else {
+							describesToAdd.add(describedElementToAdd);
+						}
+					}
+					valuesArray = toArrayNode(documentUri, describesToAdd.iterator(), 
+							relationships);
+				} else {
+					valuesArray = toArrayNode(documentUri, propertyValues, 
+							relationships);
+				}
 				retval.set(MultiFormatStore.propertyNameToCollectionPropertyName(propertyName), 
 						valuesArray);
 			} else {
@@ -203,31 +242,6 @@ public class JacksonSerializer {
 			}
 		}
 		return retval;
-	}
-	
-	/**
-	 * @param relationships all relationships in the document
-	 * @return all related element IDs for DOCUMENT_DESCRIBES relationships from the Spdx Document
-	 */
-	private ArrayNode getDocumentDescribes(ArrayNode relationships) {
-		ArrayNode documentDescribes = mapper.createArrayNode();
-		for (JsonNode relationship:relationships) {
-			if (relationship.isObject()) {
-				JsonNode typeNode = relationship.get(SpdxConstants.PROP_RELATIONSHIP_TYPE);
-				if (typeNode.isTextual() &&
-						"DESCRIBES".equals(typeNode.asText())) {
-					JsonNode elementId = relationship.get(SpdxConstants.PROP_SPDX_ELEMENTID);
-					if (elementId.isTextual() &&
-							SpdxConstants.SPDX_DOCUMENT_ID.equals(elementId.asText())) {
-						JsonNode relatedElement = relationship.get(SpdxConstants.PROP_RELATED_SPDX_ELEMENT);
-						if (relatedElement.isTextual()) {
-							documentDescribes.add(relatedElement.asText());
-						}
-					}
-				}
-			}
-		}
-		return documentDescribes;
 	}
 
 	/**
@@ -274,15 +288,22 @@ public class JacksonSerializer {
 	}
 
 	/**
+	 * Add the JSON relationships for an element
 	 * @param documentUri Document namespace or Uri
-	 * @param id element ID for the element containing the relationship
-	 * @param valueList List of all relationships
-	 * @return collection of JsonObjects representing the relationships
+	 * @param element element containing the relationship
+	 * @param elementNode the JSON node for the serialized element
+	 * @param valueList List of all relationships values
+	 * @param relationships ArrayNode of relationships to add any found relationships
+	 * @param hasFileIds set of hasFile property file Ids added to the element - used to avoid duplicates
+	 * @param documentDescribesids set of documentDescribes element IDs added to the element - used to avoid duplicates
 	 * @throws InvalidSPDXAnalysisException
 	 */
-	private Collection<? extends ObjectNode> toJsonRelationships(String documentUri, String id, 
-			Iterator<Object> valueList) throws InvalidSPDXAnalysisException {
-		ArrayList<ObjectNode> retval = new ArrayList<>();
+	private void addJsonRelationships(String documentUri, TypedValue element, ObjectNode elementNode,
+			ArrayNode relationships, Set<String> hasFileIds, Set<String> documentDescribesIds) throws InvalidSPDXAnalysisException {
+		Iterator<Object> valueList = store.listValues(documentUri, element.getId(), 
+				SpdxConstants.PROP_RELATIONSHIP);
+		List<String> hasFileIdsToAdd = new ArrayList<>();
+		List<String> documentDescribesIdsToAdd = new ArrayList<>();
 		while (valueList.hasNext()) {
 			Object value = valueList.next();
 			if (!(value instanceof TypedValue)) {
@@ -292,26 +313,29 @@ public class JacksonSerializer {
 			if (!SpdxConstants.CLASS_RELATIONSHIP.equals(tvValue.getType())) {
 				throw new SpdxInvalidTypeException("Expected relationship type, value list element was of type "+tvValue.getType());
 			}
-			ObjectNode relationship = mapper.createObjectNode();
-			relationship.put(SpdxConstants.PROP_SPDX_ELEMENTID, id);
 			Optional<Object> relatedSpdxElement = store.getValue(documentUri, tvValue.getId(), SpdxConstants.PROP_RELATED_SPDX_ELEMENT); 
 			if (!relatedSpdxElement.isPresent()) {
-				logger.warn("Missing related SPDX element for a relationship for "+id+".  Skipping the serialization of this relationship.");
+				logger.warn("Missing related SPDX element for a relationship for "+element.getId()+".  Skipping the serialization of this relationship.");
 				continue;
 			}
+			String relatedElementId;
+			String relatedElementType;
 			if (relatedSpdxElement.get() instanceof TypedValue) {
-				String relatedElementId = ((TypedValue)relatedSpdxElement.get()).getId();
-				relationship.put(SpdxConstants.PROP_RELATED_SPDX_ELEMENT, relatedElementId);
+				relatedElementId = ((TypedValue)relatedSpdxElement.get()).getId();
+				relatedElementType = ((TypedValue)relatedSpdxElement.get()).getType();
 			} else if (relatedSpdxElement.get() instanceof IndividualUriValue) {
 				String externalUri = ((IndividualUriValue)relatedSpdxElement.get()).getIndividualURI();
 				if (SpdxConstants.URI_VALUE_NONE.equals(externalUri)) {
-					relationship.put(SpdxConstants.PROP_RELATED_SPDX_ELEMENT, SpdxConstants.NONE_VALUE);
+					relatedElementId = SpdxConstants.NONE_VALUE;
+					relatedElementType = SpdxConstants.CLASS_SPDX_NONE_ELEMENT;
 				} else if (SpdxConstants.URI_VALUE_NOASSERTION.equals(externalUri)) {
-					relationship.put(SpdxConstants.PROP_RELATED_SPDX_ELEMENT, SpdxConstants.NOASSERTION_VALUE);
+					relatedElementId = SpdxConstants.NOASSERTION_VALUE;
+					relatedElementType = SpdxConstants.CLASS_SPDX_NOASSERTION_ELEMENT;
 				} else if (SpdxConstants.EXTERNAL_SPDX_ELEMENT_URI_PATTERN.matcher(externalUri).matches()) {
 					// external SPDX element
 					ExternalSpdxElement externalElement = ExternalSpdxElement.uriToExternalSpdxElement(externalUri, store, documentUri, null);
-					relationship.put(SpdxConstants.PROP_RELATED_SPDX_ELEMENT, externalElement.getExternalDocumentId() + ":" + externalElement.getExternalElementId());
+					relatedElementId = externalElement.getExternalDocumentId() + ":" + externalElement.getExternalElementId();
+					relatedElementType = SpdxConstants.CLASS_EXTERNAL_SPDX_ELEMENT;
 				} else {
 					throw new SpdxInvalidTypeException("SPDX element must be of SpdxElement, SpdxNoneElement, SpdxNoAssertionElement or external SPDX element type.  URI does not match pattern for external element: "+externalUri);
 				}
@@ -319,18 +343,65 @@ public class JacksonSerializer {
 				throw new SpdxInvalidTypeException("SPDX element must be of SpdxElement or external SPDX element type.  Found type "+relatedSpdxElement.get().getClass().toString());
 			}
 			
-			Optional<Object> type = store.getValue(documentUri, tvValue.getId(), SpdxConstants.PROP_RELATIONSHIP_TYPE);
-			if (!type.isPresent()) {
-				logger.warn("Missing type for a relationship for "+id+".  Skipping the serialization of this relationship.");
+			Optional<Object> relationshipType = store.getValue(documentUri, tvValue.getId(), SpdxConstants.PROP_RELATIONSHIP_TYPE);
+			if (!relationshipType.isPresent()) {
+				logger.warn("Missing type for a relationship for "+element.getId()+".  Skipping the serialization of this relationship.");
 				continue;
 			}
-			if (!(type.get() instanceof IndividualUriValue)) {
+			if (!(relationshipType.get() instanceof IndividualUriValue)) {
 				throw new SpdxInvalidTypeException("Expected RelationshipType type for relationshipType property.  Unexpected type "+relatedSpdxElement.get().getClass().toString());
 			}
-			relationship.put(SpdxConstants.PROP_RELATIONSHIP_TYPE, individualUriToString(documentUri, ((IndividualUriValue)type.get()).getIndividualURI()));
-			retval.add(relationship);
+			String relationshipTypeStr = individualUriToString(documentUri, ((IndividualUriValue)relationshipType.get()).getIndividualURI());
+			if (RelationshipType.DESCRIBES.toString().equals(relationshipTypeStr) && 
+					SpdxConstants.CLASS_SPDX_DOCUMENT.equals(element.getType()) &&
+					!documentDescribesIds.contains(relatedElementId)) {
+				// This needs to be added as a documentDescribes property and not as a relationship
+				documentDescribesIdsToAdd.add(relatedElementId);
+				documentDescribesIds.add(relatedElementId);
+			} else if (RelationshipType.CONTAINS.toString().equals(relationshipTypeStr) && 
+					SpdxConstants.CLASS_SPDX_PACKAGE.equals(element.getType()) &&
+					SpdxConstants.CLASS_SPDX_FILE.equals(relatedElementType) &&
+					!hasFileIds.contains(relatedElementId)) {
+				// This needs to be added as a hasFiles property
+				hasFileIdsToAdd.add(relatedElementId);
+				hasFileIds.add(relatedElementId);
+			} else {
+				ObjectNode relationship = mapper.createObjectNode();
+				relationship.put(SpdxConstants.PROP_SPDX_ELEMENTID, element.getId());
+				relationship.put(SpdxConstants.PROP_RELATIONSHIP_TYPE, relationshipTypeStr);
+				relationship.put(SpdxConstants.PROP_RELATED_SPDX_ELEMENT, relatedElementId);
+				relationships.add(relationship);
+			}
+			if (documentDescribesIdsToAdd.size() > 0) {
+				JsonNode jnDescribes = elementNode.get(SpdxConstants.PROP_DOCUMENT_DESCRIBES);
+				if (Objects.isNull(jnDescribes)) {
+					jnDescribes = mapper.createArrayNode();
+					elementNode.set(SpdxConstants.PROP_DOCUMENT_DESCRIBES, jnDescribes);
+				}
+				if (!(jnDescribes instanceof ArrayNode)) {
+					throw new InvalidSPDXAnalysisException("Describes is not an array");
+				}
+				for (String describesId:documentDescribesIdsToAdd) {
+					((ArrayNode)jnDescribes).add(describesId);
+				}
+			}
+			if (hasFileIdsToAdd.size() > 0) {
+				JsonNode jnFiles = elementNode.get(
+						MultiFormatStore.propertyNameToCollectionPropertyName(SpdxConstants.PROP_PACKAGE_FILE));
+				if (Objects.isNull(jnFiles)) {
+					jnFiles = mapper.createArrayNode();
+					elementNode.set(
+							MultiFormatStore.propertyNameToCollectionPropertyName(SpdxConstants.PROP_PACKAGE_FILE),
+							jnFiles);
+				}
+				if (!(jnFiles instanceof ArrayNode)) {
+					throw new InvalidSPDXAnalysisException("hasFile is not an array");
+				}
+				for (String hasFileId:hasFileIdsToAdd) {
+					((ArrayNode)jnFiles).add(hasFileId);
+				}
+			}
 		}
-		return retval;
 	}
 	
 	/**

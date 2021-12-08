@@ -245,12 +245,24 @@
     "relationshipType" : "CONTAINS"
   }, {
     "spdxElementId" : "SPDXRef-DOCUMENT",
+    "relatedSpdxElement" : "SPDXRef-File",
+    "relationshipType" : "DESCRIBES"
+  }, {
+    "spdxElementId" : "SPDXRef-DOCUMENT",
     "relatedSpdxElement" : "DocumentRef-spdx-tool-1.2:SPDXRef-ToolsElement",
     "relationshipType" : "COPY_OF"
+  }, {
+    "spdxElementId" : "SPDXRef-DOCUMENT",
+    "relatedSpdxElement" : "SPDXRef-Package",
+    "relationshipType" : "DESCRIBES"
   }, {
     "spdxElementId" : "SPDXRef-Package",
     "relatedSpdxElement" : "SPDXRef-Saxon",
     "relationshipType" : "DYNAMIC_LINK"
+  }, {
+    "spdxElementId" : "SPDXRef-Package",
+    "relatedSpdxElement" : "SPDXRef-JenaLib",
+    "relationshipType" : "CONTAINS"
   }, {
     "spdxElementId" : "SPDXRef-CommonsLangSrc",
     "relatedSpdxElement" : "NOASSERTION",
@@ -263,5 +275,17 @@
     "spdxElementId" : "SPDXRef-File",
     "relatedSpdxElement" : "SPDXRef-fromDoap-0",
     "relationshipType" : "GENERATED_FROM"
+  }, {
+    "spdxElementId" : "SPDXRef-Package",
+    "relatedSpdxElement" : "SPDXRef-JenaLib",
+    "relationshipType" : "CONTAINS"
+  }, {
+    "spdxElementId" : "SPDXRef-Package",
+    "relatedSpdxElement" : "SPDXRef-DoapSource",
+    "relationshipType" : "CONTAINS"
+  }, {
+    "spdxElementId" : "SPDXRef-Package",
+    "relatedSpdxElement" : "SPDXRef-CommonsLangSrc",
+    "relationshipType" : "CONTAINS"
   } ]
 }
