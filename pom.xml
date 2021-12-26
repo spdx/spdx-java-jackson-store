@@ -4,7 +4,7 @@
 
   <groupId>org.spdx</groupId>
   <artifactId>spdx-jackson-store</artifactId>
-  <version>1.0.3-SNAPSHOT</version>
+  <version>1.0.3</version>
   <packaging>jar</packaging>
 
   <name>spdx-jackson-store</name>
@@ -103,7 +103,7 @@ This store supports serializing and deserializing files in JSON, YAML and XML fo
     <dependency>
     	<groupId>org.spdx</groupId>
     	<artifactId>java-spdx-library</artifactId>
-    	<version>1.0.8</version>
+    	<version>1.0.10</version>
     </dependency>
     <dependency>
     	<groupId>com.google.code.gson</groupId>
@@ -229,7 +229,7 @@ This store supports serializing and deserializing files in JSON, YAML and XML fo
 			<plugin>
 				<groupId>org.spdx</groupId>
 					<artifactId>spdx-maven-plugin</artifactId>
-					<version>0.5.3</version>
+					<version>0.5.5</version>
 					<executions>
 						<execution>
 							<id>build-spdx</id>
