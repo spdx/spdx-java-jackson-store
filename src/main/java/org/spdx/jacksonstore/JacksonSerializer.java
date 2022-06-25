@@ -486,7 +486,11 @@ public class JacksonSerializer {
 	private String individualUriToString(String documentUri, String uri) throws InvalidSPDXAnalysisException {
 		Object enumval = SpdxEnumFactory.uriToEnum.get(uri);
 		if (Objects.nonNull(enumval)) {
-			return enumval.toString();
+			if (enumval instanceof RelationshipType) {
+				return enumval.toString();
+			} else {
+				return enumval.toString().replaceAll("_", "-");
+			}
 		} else if (SpdxConstants.EXTERNAL_SPDX_ELEMENT_URI_PATTERN.matcher(uri).matches()) {
 			ExternalSpdxElement externalElement = ExternalSpdxElement.uriToExternalSpdxElement(uri, store, documentUri, null);
 			return externalElement.getExternalDocumentId() + ":" + externalElement.getExternalElementId();

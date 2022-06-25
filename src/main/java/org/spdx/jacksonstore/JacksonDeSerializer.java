@@ -175,7 +175,7 @@ public class JacksonDeSerializer {
 		}
 		store.create(documentUri, id, type);
 		try {
-		restoreObjectPropertyValues(documentUri, id, jsonNode, spdxIdProperties);
+			restoreObjectPropertyValues(documentUri, id, jsonNode, spdxIdProperties);
 		} catch(InvalidSPDXAnalysisException ex) {
 			// Add more information to the error message
 			throw new InvalidSPDXAnalysisException("Error parsing JSON field for ID "+id+": "+ex.getMessage(), ex);
@@ -558,7 +558,7 @@ public class JacksonDeSerializer {
 				return value.asText();
 			} else if (clazz.isEnum()) {
 				for (Object enumConst:clazz.getEnumConstants()) {
-					if (enumConst instanceof IndividualUriValue && value.asText().equals(enumConst.toString())) {
+					if (enumConst instanceof IndividualUriValue && value.asText().replaceAll("-","_").equals(enumConst.toString())) {
 						return new SimpleUriValue((IndividualUriValue)enumConst);
 					}
 				}
