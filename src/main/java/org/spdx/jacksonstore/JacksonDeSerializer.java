@@ -175,7 +175,7 @@ public class JacksonDeSerializer {
 		}
 		store.create(documentUri, id, type);
 		try {
-		restoreObjectPropertyValues(documentUri, id, jsonNode, spdxIdProperties);
+			restoreObjectPropertyValues(documentUri, id, jsonNode, spdxIdProperties);
 		} catch(InvalidSPDXAnalysisException ex) {
 			// Add more information to the error message
 			throw new InvalidSPDXAnalysisException("Error parsing JSON field for ID "+id+": "+ex.getMessage(), ex);
@@ -307,9 +307,9 @@ public class JacksonDeSerializer {
 
 	/**
 	 * Restore all the property values within the JsonNode
-	 * @param documentUri
-	 * @param id
-	 * @param node
+	 * @param documentUri SPDX Document URI
+	 * @param id ID for the element containing the properties
+	 * @param node Node containing the property values
 	 * @param spdxIdProperties Properties which contain an SPDX ID which needs to be replaced
 	 * @throws InvalidSPDXAnalysisException 
 	 */
@@ -322,23 +322,44 @@ public class JacksonDeSerializer {
 				continue;
 			} else if (SpdxConstants.PROP_DOCUMENT_DESCRIBES.equals(field.getKey())) {
 				// These needs to be converted to a DocumentDescribes relationship
-				if ((field.getValue() instanceof ArrayNode)) {
-					for (JsonNode describes:((ArrayNode)field.getValue())) {		
-						String relationshipId = addRelationship(documentUri, id, 
-								new SimpleUriValue(RelationshipType.DESCRIBES.getIndividualURI()), 
-								describes.asText());
-						spdxIdProperties.put(relationshipId, SpdxConstants.PROP_RELATED_SPDX_ELEMENT); // Add the SPDX ID to the list to be translated back to elements later
-					}					
-				} else {
-					String relationshipId = addRelationship(documentUri, id, 
-							new SimpleUriValue(RelationshipType.DESCRIBES.getIndividualURI()), 
-							field.getValue().asText());
-					spdxIdProperties.put(relationshipId, SpdxConstants.PROP_RELATED_SPDX_ELEMENT); // Add the SPDX ID to the list to be translated back to elements later
-				}
-
+				convertFieldToRelationship(documentUri, id, field.getValue(), 
+						RelationshipType.DESCRIBES, spdxIdProperties);
+			} else if (SpdxConstants.PROP_PACKAGE_FILE.equals(
+					MultiFormatStore.collectionPropertyNameToPropertyName(field.getKey()))) {
+				// These needs to be converted to a CONTAINSS relationship
+				convertFieldToRelationship(documentUri, id, field.getValue(), 
+						RelationshipType.CONTAINS, spdxIdProperties);
 			} else {
 			    setPropertyValueForJsonNode(documentUri, id, field.getKey(), field.getValue(), spdxIdProperties, false);
 			}
+		}
+	}
+	
+	
+
+	/**
+	 * Converts a field value to an equivalent relationship
+	 * @param documentUri SPDX Document URI
+	 * @param id ID for the element containing the properties
+	 * @param spdxIdField Either a single SPDX ID or an array of SPDX IDs
+	 * @param relationshipType Relationship type to use
+	 * @param spdxIdProperties properties to add the relationship to
+	 * @throws InvalidSPDXAnalysisException 
+	 */
+	private void convertFieldToRelationship(String documentUri, String id, JsonNode spdxIdField,
+			RelationshipType relationshipType, Map<String, String> spdxIdProperties) throws InvalidSPDXAnalysisException {
+		if ((spdxIdField instanceof ArrayNode)) {
+			for (JsonNode spdxidNode:((ArrayNode)spdxIdField)) {		
+				String relationshipId = addRelationship(documentUri, id, 
+						new SimpleUriValue(relationshipType.getIndividualURI()), 
+						spdxidNode.asText());
+				spdxIdProperties.put(relationshipId, SpdxConstants.PROP_RELATED_SPDX_ELEMENT); // Add the SPDX ID to the list to be translated back to elements later
+			}					
+		} else {
+			String relationshipId = addRelationship(documentUri, id, 
+					new SimpleUriValue(relationshipType.getIndividualURI()), 
+					spdxIdField.asText());
+			spdxIdProperties.put(relationshipId, SpdxConstants.PROP_RELATED_SPDX_ELEMENT); // Add the SPDX ID to the list to be translated back to elements later
 		}
 	}
 
@@ -537,7 +558,7 @@ public class JacksonDeSerializer {
 				return value.asText();
 			} else if (clazz.isEnum()) {
 				for (Object enumConst:clazz.getEnumConstants()) {
-					if (enumConst instanceof IndividualUriValue && value.asText().equals(enumConst.toString())) {
+					if (enumConst instanceof IndividualUriValue && value.asText().replaceAll("-","_").equals(enumConst.toString())) {
 						return new SimpleUriValue((IndividualUriValue)enumConst);
 					}
 				}

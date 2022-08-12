@@ -1,11 +1,11 @@
 {
   "SPDXID" : "SPDXRef-DOCUMENT",
-  "spdxVersion" : "SPDX-2.2",
+  "spdxVersion" : "SPDX-2.3",
   "creationInfo" : {
     "comment" : "This package has been shipped in source and binary form.\nThe binaries were created with gcc 4.5.1 and expect to link to\ncompatible system run time libraries.",
     "created" : "2010-01-29T18:30:22Z",
     "creators" : [ "Tool: LicenseFind-1.0", "Organization: ExampleCodeInspect ()", "Person: Jane Doe ()" ],
-    "licenseListVersion" : "3.9"
+    "licenseListVersion" : "3.17"
   },
   "name" : "SPDX-Tools-v2.0",
   "dataLicense" : "CC0-1.0",
@@ -63,6 +63,10 @@
       "annotator" : "Person: Package Commenter",
       "comment" : "Package level annotation"
     } ],
+    "primaryPackagePurpose" : "CONTAINER",
+    "releaseDate" : "2011-02-10T00:00:00Z",
+    "builtDate" : "2012-02-10T00:00:00Z",
+    "validUntilDate" : "2013-02-10T00:00:00Z",
     "attributionTexts" : [ "The GNU C Library is free software.  See the file COPYING.LIB for copying conditions, and LICENSES for notices about a few contributions that require these additional notices to be distributed.  License copyright years may be listed using range notation, e.g., 1996-2015, indicating that every year in the range, inclusive, is a copyrightable year that would otherwise be listed individually." ],
     "checksums" : [ {
       "algorithm" : "SHA1",
@@ -73,6 +77,9 @@
     }, {
       "algorithm" : "SHA256",
       "checksumValue" : "11b6d3ee554eedf79299905a98f9b9a04e498210b59f15094c916c91d150efcd"
+    }, {
+      "algorithm" : "BLAKE2b-512",
+      "checksumValue" : "a8cfbbd73726062df0c6864dda65defe58ef0cc52a5625090fa17601e1eecd1b628e94f396ae402a00acc9eab77b4d4c2e852aaaa25a636d80af3fc7913ef5b8"
     } ],
     "copyrightText" : "Copyright 2008-2010 John Smith",
     "description" : "The GNU C Library defines functions that are specified by the ISO C standard, as well as additional features specific to POSIX and other derivatives of the Unix operating system, and extensions specific to GNU systems.",
@@ -86,9 +93,12 @@
       "referenceCategory" : "SECURITY",
       "referenceLocator" : "cpe:2.3:a:pivotal_software:spring_framework:4.1.0:*:*:*:*:*:*:*",
       "referenceType" : "http://spdx.org/rdf/references/cpe23Type"
+    }, {
+      "referenceCategory" : "PACKAGE-MANAGER",
+      "referenceLocator" : "org.apache.tomcat:tomcat:9.0.0.M4",
+      "referenceType" : "http://spdx.org/rdf/references/maven-central"
     } ],
     "filesAnalyzed" : true,
-    "hasFiles" : [ "SPDXRef-JenaLib", "SPDXRef-DoapSource", "SPDXRef-CommonsLangSrc" ],
     "homepage" : "http://ftp.gnu.org/gnu/glibc",
     "licenseComments" : "The license for this project changed with the release of version x.y.  The version of the project included here post-dates the license change.",
     "licenseConcluded" : "(LGPL-2.0-only OR LicenseRef-3)",
@@ -108,12 +118,9 @@
   }, {
     "SPDXID" : "SPDXRef-fromDoap-1",
     "comment" : "This package was converted from a DOAP Project by the same name",
-    "copyrightText" : "NOASSERTION",
     "downloadLocation" : "NOASSERTION",
     "filesAnalyzed" : false,
     "homepage" : "http://commons.apache.org/proper/commons-lang/",
-    "licenseConcluded" : "NOASSERTION",
-    "licenseDeclared" : "NOASSERTION",
     "name" : "Apache Commons Lang"
   }, {
     "SPDXID" : "SPDXRef-fromDoap-0",
@@ -252,6 +259,18 @@
     "relatedSpdxElement" : "SPDXRef-Saxon",
     "relationshipType" : "DYNAMIC_LINK"
   }, {
+    "spdxElementId" : "SPDXRef-Package",
+    "relatedSpdxElement" : "SPDXRef-JenaLib",
+    "relationshipType" : "CONTAINS"
+  }, {
+    "spdxElementId" : "SPDXRef-Package",
+    "relatedSpdxElement" : "SPDXRef-DoapSource",
+    "relationshipType" : "CONTAINS"
+  }, {
+    "spdxElementId" : "SPDXRef-Package",
+    "relatedSpdxElement" : "SPDXRef-CommonsLangSrc",
+    "relationshipType" : "CONTAINS"
+  }, {
     "spdxElementId" : "SPDXRef-CommonsLangSrc",
     "relatedSpdxElement" : "NOASSERTION",
     "relationshipType" : "GENERATED_FROM"
@@ -263,5 +282,13 @@
     "spdxElementId" : "SPDXRef-File",
     "relatedSpdxElement" : "SPDXRef-fromDoap-0",
     "relationshipType" : "GENERATED_FROM"
+  }, {
+    "spdxElementId" : "SPDXRef-DoapSource",
+    "relatedSpdxElement" : "SPDXRef-fromDoap-0",
+    "relationshipType" : "SPECIFICATION_FOR"
+  }, {
+    "spdxElementId" : "SPDXRef-DoapSource",
+    "relatedSpdxElement" : "SPDXRef-fromDoap-0",
+    "relationshipType" : "REQUIREMENT_DESCRIPTION_FOR"
   } ]
 }

@@ -108,7 +108,7 @@ public class SpdxJsonLDContext {
 	}
 	
 	static private SpdxJsonLDContext instance;
-	static final String JSON_LD_PATH = "/resources/spdx-2-2-revision-16-onotology.context.json";
+	static final String JSON_LD_PATH = "/resources/spdx-2-3-revision-2-onotology.context.json";
 	static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 	private JsonNode contexts;
 	

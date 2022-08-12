@@ -54,7 +54,6 @@
     "comment" : "This is just an example.  Some of the non-standard licenses look like they are actually BSD 3 clause licenses"
   } ],
   "documentNamespace" : "http://spdx.org/spdxdocs/spdx-example-444504E0-4F89-41D3-9A0C-0305E82C3301",
-  "documentDescribes" : [ "SPDXRef-File", "SPDXRef-Package" ],
   "packages" : [ {
     "SPDXID" : "SPDXRef-Package",
     "annotations" : [ {
@@ -88,7 +87,6 @@
       "referenceType" : "http://spdx.org/rdf/references/cpe23Type"
     } ],
     "filesAnalyzed" : true,
-    "hasFiles" : [ "SPDXRef-JenaLib", "SPDXRef-DoapSource", "SPDXRef-CommonsLangSrc" ],
     "homepage" : "http://ftp.gnu.org/gnu/glibc",
     "licenseComments" : "The license for this project changed with the release of version x.y.  The version of the project included here post-dates the license change.",
     "licenseConcluded" : "(LGPL-2.0-only OR LicenseRef-3)",
@@ -245,12 +243,24 @@
     "relationshipType" : "CONTAINS"
   }, {
     "spdxElementId" : "SPDXRef-DOCUMENT",
+    "relatedSpdxElement" : "SPDXRef-File",
+    "relationshipType" : "DESCRIBES"
+  }, {
+    "spdxElementId" : "SPDXRef-DOCUMENT",
     "relatedSpdxElement" : "DocumentRef-spdx-tool-1.2:SPDXRef-ToolsElement",
     "relationshipType" : "COPY_OF"
+  }, {
+    "spdxElementId" : "SPDXRef-DOCUMENT",
+    "relatedSpdxElement" : "SPDXRef-Package",
+    "relationshipType" : "DESCRIBES"
   }, {
     "spdxElementId" : "SPDXRef-Package",
     "relatedSpdxElement" : "SPDXRef-Saxon",
     "relationshipType" : "DYNAMIC_LINK"
+  }, {
+    "spdxElementId" : "SPDXRef-Package",
+    "relatedSpdxElement" : "SPDXRef-JenaLib",
+    "relationshipType" : "CONTAINS"
   }, {
     "spdxElementId" : "SPDXRef-CommonsLangSrc",
     "relatedSpdxElement" : "NOASSERTION",
@@ -263,5 +273,17 @@
     "spdxElementId" : "SPDXRef-File",
     "relatedSpdxElement" : "SPDXRef-fromDoap-0",
     "relationshipType" : "GENERATED_FROM"
+  }, {
+    "spdxElementId" : "SPDXRef-Package",
+    "relatedSpdxElement" : "SPDXRef-JenaLib",
+    "relationshipType" : "CONTAINS"
+  }, {
+    "spdxElementId" : "SPDXRef-Package",
+    "relatedSpdxElement" : "SPDXRef-DoapSource",
+    "relationshipType" : "CONTAINS"
+  }, {
+    "spdxElementId" : "SPDXRef-Package",
+    "relatedSpdxElement" : "SPDXRef-CommonsLangSrc",
+    "relationshipType" : "CONTAINS"
   } ]
 }

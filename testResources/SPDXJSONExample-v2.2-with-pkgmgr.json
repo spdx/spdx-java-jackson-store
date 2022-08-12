@@ -86,6 +86,10 @@
       "referenceCategory" : "SECURITY",
       "referenceLocator" : "cpe:2.3:a:pivotal_software:spring_framework:4.1.0:*:*:*:*:*:*:*",
       "referenceType" : "http://spdx.org/rdf/references/cpe23Type"
+    }, {
+      "referenceCategory" : "PACKAGE-MANAGER",
+      "referenceLocator" : "org.apache.tomcat:tomcat:9.0.0.M4",
+      "referenceType" : "http://spdx.org/rdf/references/maven-central"
     } ],
     "filesAnalyzed" : true,
     "hasFiles" : [ "SPDXRef-JenaLib", "SPDXRef-DoapSource", "SPDXRef-CommonsLangSrc" ],
