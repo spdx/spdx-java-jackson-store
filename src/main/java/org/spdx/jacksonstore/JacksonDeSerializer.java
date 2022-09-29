@@ -267,8 +267,8 @@ public class JacksonDeSerializer {
 	 * @param documentNamespace documentNamespace
 	 * @param elementId ID of the element containing the relationship
 	 * @param relationshipType relationshipType
-	 * @param relatedElement
-	 * @param relationshipComment 
+	 * @param relatedElement related element
+	 * @param relationshipComment optional comment for the relationship
 	 * @return the ID of the relationship
 	 * @throws InvalidSPDXAnalysisException 
 	 */
