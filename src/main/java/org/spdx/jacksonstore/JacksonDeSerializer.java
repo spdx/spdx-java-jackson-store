@@ -68,7 +68,8 @@ public class JacksonDeSerializer {
 	 */
 	static final Set<String> SKIPPED_PROPERTIES = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(new String[] {
 			SpdxConstants.PROP_DOCUMENT_PACKAGES, SpdxConstants.PROP_DOCUMENT_FILES,
-			SpdxConstants.PROP_DOCUMENT_SNIPPETS, SpdxConstants.SPDX_IDENTIFIER, SpdxConstants.PROP_DOCUMENT_RELATIONSHIPS
+			SpdxConstants.PROP_DOCUMENT_SNIPPETS, SpdxConstants.SPDX_IDENTIFIER, SpdxConstants.PROP_DOCUMENT_RELATIONSHIPS,
+			SpdxConstants.PROP_DOCUMENT_NAMESPACE
 	})));
 
 	private IModelStore store;
