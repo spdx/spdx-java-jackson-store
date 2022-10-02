@@ -18,9 +18,11 @@
 package org.spdx.jacksonstore;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -126,8 +128,33 @@ public class JacksonSerializer {
 			if (snippets.size() > 0) {
 				doc.set(SpdxConstants.PROP_DOCUMENT_SNIPPETS, snippets);
 			}
-			//TODO: Remove duplicate relationships
-			doc.set(SpdxConstants.PROP_DOCUMENT_RELATIONSHIPS, relationships);
+			//Remove duplicate relationships
+			Map<String, Map<String, Set<String>>> iDRelTypeRelatediDMap = new HashMap<>();
+			Iterator<JsonNode> relIter = relationships.elements();
+			ArrayNode deDupedRelationships = new ArrayNode(JsonNodeFactory.instance);
+			while (relIter.hasNext()) {
+				JsonNode relationship = relIter.next();
+				String id = relationship.get(SpdxConstants.PROP_SPDX_ELEMENTID).asText();
+				String relType = relationship.get(SpdxConstants.PROP_RELATIONSHIP_TYPE).asText();
+				String relatedID = relationship.get(SpdxConstants.PROP_RELATED_SPDX_ELEMENT).asText();
+				Map<String, Set<String>> relTypeRelatedIdMap = iDRelTypeRelatediDMap.get(id);
+				if (Objects.isNull(relTypeRelatedIdMap)) {
+					relTypeRelatedIdMap = new HashMap<>();
+					iDRelTypeRelatediDMap.put(id, relTypeRelatedIdMap);
+				}
+				Set<String> relatedIds = relTypeRelatedIdMap.get(relType);
+				if (Objects.isNull(relatedIds)) {
+					relatedIds = new HashSet<>();
+					relTypeRelatedIdMap.put(relType, relatedIds);
+				}
+				if (!relatedIds.contains(relatedID)) {
+					deDupedRelationships.add(relationship);
+					relatedIds.add(relatedID);
+				}
+			}
+			
+			
+			doc.set(SpdxConstants.PROP_DOCUMENT_RELATIONSHIPS, deDupedRelationships);
 			ObjectNode output;
 			switch (format) {
 				case YAML: {
@@ -372,19 +399,6 @@ public class JacksonSerializer {
 				relationship.put(SpdxConstants.PROP_RELATED_SPDX_ELEMENT, relatedElementId);
 				relationships.add(relationship);
 			}
-			if (documentDescribesIdsToAdd.size() > 0) {
-				JsonNode jnDescribes = elementNode.get(SpdxConstants.PROP_DOCUMENT_DESCRIBES);
-				if (Objects.isNull(jnDescribes)) {
-					jnDescribes = mapper.createArrayNode();
-					elementNode.set(SpdxConstants.PROP_DOCUMENT_DESCRIBES, jnDescribes);
-				}
-				if (!(jnDescribes instanceof ArrayNode)) {
-					throw new InvalidSPDXAnalysisException("Describes is not an array");
-				}
-				for (String describesId:documentDescribesIdsToAdd) {
-					((ArrayNode)jnDescribes).add(describesId);
-				}
-			}
 			if (hasFileIdsToAdd.size() > 0) {
 				JsonNode jnFiles = elementNode.get(
 						MultiFormatStore.propertyNameToCollectionPropertyName(SpdxConstants.PROP_PACKAGE_FILE));
@@ -400,6 +414,19 @@ public class JacksonSerializer {
 				for (String hasFileId:hasFileIdsToAdd) {
 					((ArrayNode)jnFiles).add(hasFileId);
 				}
+			}
+		}
+		if (documentDescribesIdsToAdd.size() > 0) {
+			JsonNode jnDescribes = elementNode.get(SpdxConstants.PROP_DOCUMENT_DESCRIBES);
+			if (Objects.isNull(jnDescribes)) {
+				jnDescribes = mapper.createArrayNode();
+				elementNode.set(SpdxConstants.PROP_DOCUMENT_DESCRIBES, jnDescribes);
+			}
+			if (!(jnDescribes instanceof ArrayNode)) {
+				throw new InvalidSPDXAnalysisException("Describes is not an array");
+			}
+			for (String describesId:documentDescribesIdsToAdd) {
+				((ArrayNode)jnDescribes).add(describesId);
 			}
 		}
 	}
