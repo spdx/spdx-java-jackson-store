@@ -252,7 +252,14 @@ public class JacksonDeSerializer {
 				throw new InvalidSPDXAnalysisException("Missing required related element");
 			}
 			Object relatedElement = idToObjectValue(documentNamespace, relatedElementNode.asText(), addedElements);
-			addRelationship(documentNamespace, element.getId(), relationshipType, relatedElement);
+			JsonNode commentNode = relationship.get(SpdxConstants.RDFS_PROP_COMMENT);
+			Optional<String> relationshipComment;
+			if (Objects.isNull(commentNode) || !commentNode.isTextual()) {
+				relationshipComment = Optional.empty();
+			} else {
+				relationshipComment = Optional.of(commentNode.asText());
+			}
+			addRelationship(documentNamespace, element.getId(), relationshipType, relatedElement, relationshipComment);
 		}
 	}
 
@@ -261,11 +268,12 @@ public class JacksonDeSerializer {
 	 * @param documentNamespace documentNamespace
 	 * @param elementId ID of the element containing the relationship
 	 * @param relationshipType relationshipType
-	 * @param relatedElement
+	 * @param relatedElement related element
+	 * @param relationshipComment optional comment for the relationship
 	 * @return the ID of the relationship
 	 * @throws InvalidSPDXAnalysisException 
 	 */
-	private String addRelationship(String documentNamespace, String elementId, SimpleUriValue relationshipType, Object relatedElement) throws InvalidSPDXAnalysisException {
+	private String addRelationship(String documentNamespace, String elementId, SimpleUriValue relationshipType, Object relatedElement, Optional<String> relationshipComment) throws InvalidSPDXAnalysisException {
         String relatedElementId;
         if (relatedElement instanceof TypedValue) {
             relatedElementId = ((TypedValue)relatedElement).getId();
@@ -302,6 +310,9 @@ public class JacksonDeSerializer {
 		store.setValue(documentNamespace, relationshipId, SpdxConstants.PROP_RELATED_SPDX_ELEMENT, relatedElement);
 		store.addValueToCollection(documentNamespace, elementId, SpdxConstants.PROP_RELATIONSHIP, 
 				new TypedValue(relationshipId, SpdxConstants.CLASS_RELATIONSHIP));
+		if (relationshipComment.isPresent()) {
+			store.setValue(documentNamespace, relationshipId, SpdxConstants.RDFS_PROP_COMMENT, relationshipComment.get());
+		}
 		relatedElementRelationships.put(relationshipType, relationshipId);
 		return relationshipId;
 	}
@@ -353,13 +364,13 @@ public class JacksonDeSerializer {
 			for (JsonNode spdxidNode:((ArrayNode)spdxIdField)) {		
 				String relationshipId = addRelationship(documentUri, id, 
 						new SimpleUriValue(relationshipType.getIndividualURI()), 
-						spdxidNode.asText());
+						spdxidNode.asText(), Optional.empty());
 				spdxIdProperties.put(relationshipId, SpdxConstants.PROP_RELATED_SPDX_ELEMENT); // Add the SPDX ID to the list to be translated back to elements later
 			}					
 		} else {
 			String relationshipId = addRelationship(documentUri, id, 
 					new SimpleUriValue(relationshipType.getIndividualURI()), 
-					spdxIdField.asText());
+					spdxIdField.asText(), Optional.empty());
 			spdxIdProperties.put(relationshipId, SpdxConstants.PROP_RELATED_SPDX_ELEMENT); // Add the SPDX ID to the list to be translated back to elements later
 		}
 	}

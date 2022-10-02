@@ -345,6 +345,7 @@ public class JacksonSerializer {
 				logger.warn("Missing related SPDX element for a relationship for "+element.getId()+".  Skipping the serialization of this relationship.");
 				continue;
 			}
+			Optional<Object> relationshipComment = store.getValue(documentUri, tvValue.getId(), SpdxConstants.RDFS_PROP_COMMENT);
 			String relatedElementId;
 			String relatedElementType;
 			if (relatedSpdxElement.get() instanceof TypedValue) {
@@ -390,6 +391,7 @@ public class JacksonSerializer {
 					SpdxConstants.CLASS_SPDX_FILE.equals(relatedElementType) &&
 					!hasFileIds.contains(relatedElementId)) {
 				// This needs to be added as a hasFiles property
+				//TODO: Check if hasFile is deprecated - if so, remove this section
 				hasFileIdsToAdd.add(relatedElementId);
 				hasFileIds.add(relatedElementId);
 			} else {
@@ -397,6 +399,9 @@ public class JacksonSerializer {
 				relationship.put(SpdxConstants.PROP_SPDX_ELEMENTID, element.getId());
 				relationship.put(SpdxConstants.PROP_RELATIONSHIP_TYPE, relationshipTypeStr);
 				relationship.put(SpdxConstants.PROP_RELATED_SPDX_ELEMENT, relatedElementId);
+				if (relationshipComment.isPresent()) {
+					relationship.put(SpdxConstants.RDFS_PROP_COMMENT, (String)relationshipComment.get());
+				}
 				relationships.add(relationship);
 			}
 			if (hasFileIdsToAdd.size() > 0) {

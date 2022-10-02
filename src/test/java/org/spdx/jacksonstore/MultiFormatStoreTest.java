@@ -38,6 +38,7 @@ import java.util.Optional;
 import org.spdx.jacksonstore.MultiFormatStore.Format;
 import org.spdx.library.InvalidSPDXAnalysisException;
 import org.spdx.library.ModelCopyManager;
+import org.spdx.library.SpdxConstants;
 import org.spdx.library.Version;
 import org.spdx.library.model.Checksum;
 import org.spdx.library.model.Relationship;
@@ -332,6 +333,92 @@ public class MultiFormatStoreTest extends TestCase {
 	}
 	
 	/**
+	 * Test if relationships properly serialize relationship comments
+	 * @throws InvalidSPDXAnalysisException
+	 * @throws IOException 
+	 */
+	public void testRelationshipComment() throws InvalidSPDXAnalysisException, IOException {
+		String documentUri = "https://someuri";
+        ModelCopyManager copyManager = new ModelCopyManager();
+        ISerializableModelStore modelStore = new MultiFormatStore(new InMemSpdxStore(), MultiFormatStore.Format.JSON_PRETTY);
+        SpdxDocument document = SpdxModelFactory.createSpdxDocument(modelStore, documentUri, copyManager);
+        document.setSpecVersion(Version.TWO_POINT_THREE_VERSION);
+        document.setName("SPDX-tool-test");
+        Checksum sha1Checksum = Checksum.create(modelStore, documentUri, ChecksumAlgorithm.SHA1, "d6a770ba38583ed4bb4525bd96e50461655d2758");
+        AnyLicenseInfo concludedLicense = LicenseInfoFactory.parseSPDXLicenseString("LGPL-2.0-only OR LicenseRef-2");
+        SpdxFile fileA = document.createSpdxFile("SPDXRef-fileA", "./package/fileA.c", concludedLicense,
+                        Arrays.asList(new AnyLicenseInfo[0]), "Copyright 2008-2010 John Smith", sha1Checksum)
+                .build();
+        String relationshipComment = "Relationship comment";
+        Relationship relationship = document.createRelationship(fileA, RelationshipType.CONTAINS, relationshipComment);
+        document.addRelationship(relationship);
+        Collection<Relationship> docrels = document.getRelationships();
+        assertEquals(1, docrels.size());
+        for (Relationship rel:docrels) {
+        	assertEquals(RelationshipType.CONTAINS, rel.getRelationshipType());
+        	SpdxElement elem = rel.getRelatedSpdxElement().get();
+        	assertEquals(fileA, elem);
+        	Optional<String> relComment = rel.getComment();
+        	assertTrue(relComment.isPresent());
+        	assertEquals(relationshipComment, relComment.get());
+        }
+    	
+    	// test that it deserializes correctly
+    	Path tempDirPath = Files.createTempDirectory("mfsTest");
+    	File serFile = tempDirPath.resolve("testspdx.json").toFile();
+    	assertTrue(serFile.createNewFile());
+    	try {
+    		try (OutputStream stream = new FileOutputStream(serFile)) {
+    			modelStore.serialize(documentUri, stream);
+    		}
+    		ISerializableModelStore resultStore = new MultiFormatStore(new InMemSpdxStore(), MultiFormatStore.Format.JSON);
+    		try (InputStream inStream = new FileInputStream(serFile)) {
+    			assertEquals(documentUri, resultStore.deSerialize(inStream, false));
+    		}
+    		document = SpdxModelFactory.createSpdxDocument(resultStore, documentUri, copyManager);
+    		docrels = document.getRelationships();
+            assertEquals(1, docrels.size());
+            for (Relationship rel:docrels) {
+            	assertEquals(RelationshipType.CONTAINS, rel.getRelationshipType());
+            	SpdxElement elem = rel.getRelatedSpdxElement().get();
+            	assertEquals(fileA, elem);
+            	Optional<String> relComment = rel.getComment();
+            	assertTrue(relComment.isPresent());
+            	assertEquals(relationshipComment, relComment.get());
+            }
+    		
+    		JsonNode doc;
+    		
+    		try (InputStream inStream = new FileInputStream(serFile)) {
+    			ObjectMapper inputMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+    			doc = inputMapper.readTree(inStream);
+    		}
+    		
+    		JsonNode relationshipsNode = doc.get("relationships");
+    		Iterator<JsonNode> iter = relationshipsNode.elements();
+    		int count = 0;
+    		
+			while (iter.hasNext()) {
+	            while (iter.hasNext()) {
+	            	count++;
+	            	JsonNode relationshipNode = iter.next();
+	            	assertEquals("SPDXRef-DOCUMENT", relationshipNode.get("spdxElementId").asText());
+	            	assertEquals(fileA.getId(), relationshipNode.get("relatedSpdxElement").asText());
+	            	assertEquals(RelationshipType.CONTAINS.toString(), relationshipNode.get("relationshipType").asText());
+	            	assertEquals(relationshipComment, relationshipNode.get(SpdxConstants.RDFS_PROP_COMMENT).asText());
+	            	
+	            }
+	            assertEquals(1, count);
+            }
+    	} finally {
+    		if (serFile.exists()) {
+    			serFile.delete();
+    		}
+    		tempDirPath.toFile().delete();
+    	}
+	}
+	
+	/**			
 	 * Test if the DocumentDescribes relationship produces more than one relationship
 	 * see issue #115 for context
 	 * @throws InvalidSPDXAnalysisException
@@ -373,7 +460,6 @@ public class MultiFormatStoreTest extends TestCase {
         }
     	assertTrue(foundFileA);
     	assertTrue(foundFileB);
-    	
     	// test that it deserializes correctly
     	Path tempDirPath = Files.createTempDirectory("mfsTest");
     	File serFile = tempDirPath.resolve("testspdx.json").toFile();
@@ -407,14 +493,12 @@ public class MultiFormatStoreTest extends TestCase {
             }
         	assertTrue(foundFileA);
         	assertTrue(foundFileB);
-    		
     		JsonNode doc;
     		
     		try (InputStream inStream = new FileInputStream(serFile)) {
     			ObjectMapper inputMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
     			doc = inputMapper.readTree(inStream);
     		}
-    		
     		JsonNode describes = doc.get("documentDescribes");
     		Iterator<JsonNode> iter = describes.elements();
     		int count = 0;
@@ -445,6 +529,4 @@ public class MultiFormatStoreTest extends TestCase {
     		tempDirPath.toFile().delete();
     	}
 	}
-
-
 }
