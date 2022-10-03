@@ -4,7 +4,7 @@
 
   <groupId>org.spdx</groupId>
   <artifactId>spdx-jackson-store</artifactId>
-  <version>1.1.0</version>
+  <version>1.1.1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>spdx-jackson-store</name>
@@ -28,6 +28,7 @@ This store supports serializing and deserializing files in JSON, YAML and XML fo
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <sonar.organization>spdx</sonar.organization>
 	<sonar.projectKey>spdx-jackson-store</sonar.projectKey>
+	<dependency-check-maven.version>7.2.1</dependency-check-maven.version>
   </properties>
    <licenses>
 	<license>
@@ -103,7 +104,7 @@ This store supports serializing and deserializing files in JSON, YAML and XML fo
     <dependency>
     	<groupId>org.spdx</groupId>
     	<artifactId>java-spdx-library</artifactId>
-    	<version>1.1.0</version>
+    	<version>1.1.1</version>
     </dependency>
     <dependency>
     	<groupId>com.google.code.gson</groupId>
@@ -113,17 +114,17 @@ This store supports serializing and deserializing files in JSON, YAML and XML fo
     <dependency>
     	<groupId>com.fasterxml.jackson.core</groupId>
     	<artifactId>jackson-databind</artifactId>
-    	<version>2.12.6.1</version>
+    	<version>2.14.0-rc1</version>
     </dependency>
     <dependency>
     	<groupId>com.fasterxml.jackson.dataformat</groupId>
     	<artifactId>jackson-dataformat-xml</artifactId>
-    	<version>2.12.2</version>
+    	<version>2.14.0-rc1</version>
     </dependency>
     <dependency>
     	<groupId>com.fasterxml.jackson.dataformat</groupId>
     	<artifactId>jackson-dataformat-yaml</artifactId>
-    	<version>2.12.3</version>
+    	<version>2.14.0-rc1</version>
     </dependency>
     <dependency>
     	<groupId>org.json</groupId>
@@ -133,7 +134,7 @@ This store supports serializing and deserializing files in JSON, YAML and XML fo
     <dependency>
     	<groupId>com.fasterxml.jackson.core</groupId>
     	<artifactId>jackson-core</artifactId>
-    	<version>2.12.3</version>
+    	<version>2.14.0-rc1</version>
     </dependency>
   </dependencies>
      <build>
@@ -177,6 +178,11 @@ This store supports serializing and deserializing files in JSON, YAML and XML fo
 			</testResource>
 		</testResources>
 		<plugins>
+			<plugin>
+   				<groupId>org.owasp</groupId>
+   				<artifactId>dependency-check-maven</artifactId>
+   				<version>${dependency-check-maven.version}</version>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
