@@ -404,21 +404,21 @@ public class JacksonSerializer {
 				}
 				relationships.add(relationship);
 			}
-			if (hasFileIdsToAdd.size() > 0) {
-				JsonNode jnFiles = elementNode.get(
-						MultiFormatStore.propertyNameToCollectionPropertyName(SpdxConstants.PROP_PACKAGE_FILE));
-				if (Objects.isNull(jnFiles)) {
-					jnFiles = mapper.createArrayNode();
-					elementNode.set(
-							MultiFormatStore.propertyNameToCollectionPropertyName(SpdxConstants.PROP_PACKAGE_FILE),
-							jnFiles);
-				}
-				if (!(jnFiles instanceof ArrayNode)) {
-					throw new InvalidSPDXAnalysisException("hasFile is not an array");
-				}
-				for (String hasFileId:hasFileIdsToAdd) {
-					((ArrayNode)jnFiles).add(hasFileId);
-				}
+		}
+		if (hasFileIdsToAdd.size() > 0) {
+			JsonNode jnFiles = elementNode.get(
+					MultiFormatStore.propertyNameToCollectionPropertyName(SpdxConstants.PROP_PACKAGE_FILE));
+			if (Objects.isNull(jnFiles)) {
+				jnFiles = mapper.createArrayNode();
+				elementNode.set(
+						MultiFormatStore.propertyNameToCollectionPropertyName(SpdxConstants.PROP_PACKAGE_FILE),
+						jnFiles);
+			}
+			if (!(jnFiles instanceof ArrayNode)) {
+				throw new InvalidSPDXAnalysisException("hasFile is not an array");
+			}
+			for (String hasFileId:hasFileIdsToAdd) {
+				((ArrayNode)jnFiles).add(hasFileId);
 			}
 		}
 		if (documentDescribesIdsToAdd.size() > 0) {
