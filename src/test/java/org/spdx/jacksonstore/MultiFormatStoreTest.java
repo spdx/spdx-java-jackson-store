@@ -529,4 +529,126 @@ public class MultiFormatStoreTest extends TestCase {
     		tempDirPath.toFile().delete();
     	}
 	}
+	
+	/**			
+	 * Test if the hasFiles relationship produces more than one relationship
+	 * see issue #115 for context
+	 * @throws InvalidSPDXAnalysisException
+	 * @throws IOException 
+	 */
+	public void testhasFiles() throws InvalidSPDXAnalysisException, IOException {
+		String documentUri = "https://someuri";
+        ModelCopyManager copyManager = new ModelCopyManager();
+        ISerializableModelStore modelStore = new MultiFormatStore(new InMemSpdxStore(), MultiFormatStore.Format.JSON_PRETTY);
+        SpdxDocument document = SpdxModelFactory.createSpdxDocument(modelStore, documentUri, copyManager);
+        document.setSpecVersion(Version.TWO_POINT_THREE_VERSION);
+        document.setName("SPDX-tool-test");
+        Checksum sha1Checksum = Checksum.create(modelStore, documentUri, ChecksumAlgorithm.SHA1, "d6a770ba38583ed4bb4525bd96e50461655d2758");
+        AnyLicenseInfo concludedLicense = LicenseInfoFactory.parseSPDXLicenseString("LGPL-2.0-only OR LicenseRef-2");
+        SpdxFile fileA = document.createSpdxFile("SPDXRef-fileA", "./package/fileA.c", concludedLicense,
+                        Arrays.asList(new AnyLicenseInfo[0]), "Copyright 2008-2010 John Smith", sha1Checksum)
+                .build();
+        SpdxFile fileB = document.createSpdxFile("SPDXRef-fileB", "./package/fileB.c", concludedLicense,
+        		Arrays.asList(new AnyLicenseInfo[0]), "Copyright 2008-2010 John Smith", sha1Checksum)
+                .build();
+        SpdxPackage pkg = document.createPackage("SPDXRef-package", "package name", concludedLicense, "NOASSERTION", concludedLicense)
+        		.setDownloadLocation("NOASSERTION")
+        		.setFilesAnalyzed(false)
+        		.build();
+        document.getDocumentDescribes().add(pkg);
+        pkg.getFiles().add(fileA);
+        pkg.getFiles().add(fileB);
+        assertEquals(2, pkg.getFiles().size());
+        assertTrue(pkg.getFiles().contains(fileA));
+        assertTrue(pkg.getFiles().contains(fileB));
+        Collection<Relationship> pkgrels = pkg.getRelationships();
+        assertEquals(2, pkgrels.size());
+        boolean foundFileA = false;
+        boolean foundFileB = false;
+        for (Relationship rel:pkgrels) {
+        	assertEquals(RelationshipType.CONTAINS, rel.getRelationshipType());
+        	SpdxElement elem = rel.getRelatedSpdxElement().get();
+        	if (fileA.equals(elem)) {
+        		foundFileA = true;
+        	} else if (fileB.equals(elem)) {
+        		foundFileB = true;
+        	} else {
+        		fail("Unexpected relationship");
+        	}
+        }
+    	assertTrue(foundFileA);
+    	assertTrue(foundFileB);
+    	// test that it deserializes correctly
+    	Path tempDirPath = Files.createTempDirectory("mfsTest");
+    	File serFile = tempDirPath.resolve("testspdx2.json").toFile();
+    	assertTrue(serFile.createNewFile());
+    	try {
+    		try (OutputStream stream = new FileOutputStream(serFile)) {
+    			modelStore.serialize(documentUri, stream);
+    		}
+    		ISerializableModelStore resultStore = new MultiFormatStore(new InMemSpdxStore(), MultiFormatStore.Format.JSON);
+    		try (InputStream inStream = new FileInputStream(serFile)) {
+    			assertEquals(documentUri, resultStore.deSerialize(inStream, false));
+    		}
+    		document = SpdxModelFactory.createSpdxDocument(resultStore, documentUri, copyManager);
+    		pkg = (SpdxPackage)document.getDocumentDescribes().toArray(new SpdxElement[1])[0];
+    		
+    		assertEquals(2, pkg.getFiles().size());
+            assertTrue(pkg.getFiles().contains(fileA));
+            assertTrue(pkg.getFiles().contains(fileB));
+            pkgrels = pkg.getRelationships();
+            assertEquals(2, pkgrels.size());
+            foundFileA = false;
+            foundFileB = false;
+            for (Relationship rel:pkgrels) {
+            	assertEquals(RelationshipType.CONTAINS, rel.getRelationshipType());
+            	SpdxElement elem = rel.getRelatedSpdxElement().get();
+            	if (fileA.equals(elem)) {
+            		foundFileA = true;
+            	} else if (fileB.equals(elem)) {
+            		foundFileB = true;
+            	} else {
+            		fail("Unexpected relationship");
+            	}
+            }
+        	assertTrue(foundFileA);
+        	assertTrue(foundFileB);
+        	
+    		JsonNode doc;
+    		try (InputStream inStream = new FileInputStream(serFile)) {
+    			ObjectMapper inputMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+    			doc = inputMapper.readTree(inStream);
+    		}
+    		JsonNode packages = doc.get("packages");
+    		JsonNode jsonPkg = packages.elements().next();
+    		JsonNode files = jsonPkg.get("hasFiles");
+    		Iterator<JsonNode> iter = files.elements();
+    		int count = 0;
+    		
+			while (iter.hasNext()) {
+	            foundFileA = false;
+	            foundFileB = false;
+	            while (iter.hasNext()) {
+	            	count++;
+	            	String spdxId = iter.next().asText();
+	            	if (fileA.getId().equals(spdxId)) {
+	            		assertFalse(foundFileA);
+	            		foundFileA = true;
+	            	}
+	            	if (fileB.getId().equals(spdxId)) {
+	            		assertFalse(foundFileB);
+	            		foundFileB = true;
+	            	}
+	            }
+	            assertTrue(foundFileA);
+	            assertTrue(foundFileB);
+	            assertEquals(2, count);
+            }
+    	} finally {
+    		if (serFile.exists()) {
+    			serFile.delete();
+    		}
+    		tempDirPath.toFile().delete();
+    	}
+	}
 }
