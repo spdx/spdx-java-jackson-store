@@ -18,6 +18,8 @@
 package org.spdx.jacksonstore;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -81,6 +83,136 @@ public class JacksonSerializer {
 		}
 		
 	}
+	
+	static final Comparator<JsonNode> NODE_COMPARATOR = new Comparator<JsonNode>() {
+
+		@Override
+		public int compare(JsonNode arg0, JsonNode arg1) {
+			if (Objects.isNull(arg0)) {
+				return Objects.isNull(arg1) ? 0 : 1;
+			}
+			if (Objects.isNull(arg1)) {
+				return -1;
+			}
+			if (arg0.isTextual()) {
+				return arg1.isTextual() ? arg0.asText().compareTo(arg1.asText()) : 1;
+			} else if (arg0.isObject()) {
+				return arg1.isObject() ? compareObject(arg0, arg1) : 1;
+			} else if (arg0.isArray()) {
+				if (!arg1.isArray()) {
+					return 1;
+				}
+				if (arg0.size() > arg1.size()) {
+					return 1;
+				} else if (arg0.size() < arg1.size()) {
+					return -1;
+				} else {
+					List<JsonNode> list0 = new ArrayList<>();
+					arg0.spliterator().forEachRemaining((node) -> list0.add(node));
+					list0.sort(NODE_COMPARATOR);
+					List<JsonNode> list1 = new ArrayList<>();
+					arg1.spliterator().forEachRemaining((node) -> list1.add(node));
+					list1.sort(NODE_COMPARATOR);
+					for (int i = 0; i < list0.size(); i++) {
+						int retval = compare(list0.get(i), list1.get(i));
+						if (retval != 0) {
+							return retval;
+						}
+					}
+					return 0;
+				}
+			} else {
+				return Integer.compare(arg0.hashCode(), arg1.hashCode());
+			}
+		}
+
+		private int compareObject(JsonNode arg0, JsonNode arg1) {
+			if (!arg1.isObject()) {
+				return 1;
+			}
+			JsonNode spdxid0 = arg0.get(SpdxConstants.SPDX_IDENTIFIER);
+			if (Objects.nonNull(spdxid0) && spdxid0.isTextual()) {
+				JsonNode spdxid1 = arg1.get(SpdxConstants.SPDX_IDENTIFIER);
+				return Objects.nonNull(spdxid1) && spdxid1.isTextual() ? spdxid0.asText().compareTo(spdxid1.asText()) : 1;
+			}
+			// look for special cases where we don't want to sort in the order of properties
+			JsonNode licenseId0 = arg0.get(SpdxConstants.PROP_LICENSE_ID);
+			if (Objects.nonNull(licenseId0) && licenseId0.isTextual()) {
+				return compareExtractedLicense(licenseId0.asText(), arg1);
+			}
+			JsonNode spdxDocument0 = arg0.get(SpdxConstants.PROP_EXTERNAL_SPDX_DOCUMENT);
+			JsonNode externalDocId0 = arg0.get(SpdxConstants.PROP_EXTERNAL_DOCUMENT_ID);
+			if (Objects.nonNull(spdxDocument0) && Objects.nonNull(externalDocId0) &&
+					spdxDocument0.isTextual() && externalDocId0.isTextual()) {
+				return compareExternalDocumentRef(spdxDocument0.asText(), externalDocId0.asText(), arg1);
+			}
+			JsonNode refCategory0 = arg0.get(SpdxConstants.PROP_REFERENCE_CATEGORY);
+			JsonNode refType0 = arg0.get(SpdxConstants.PROP_REFERENCE_TYPE);
+			JsonNode refLocator0 = arg0.get(SpdxConstants.PROP_REFERENCE_LOCATOR);
+			if (Objects.nonNull(refCategory0) && Objects.nonNull(refType0) && Objects.nonNull(refLocator0) &&
+				refCategory0.isTextual() && refType0.isTextual() && refLocator0.isTextual()) {
+					return compareExternalRef(refCategory0.asText(), refType0.asText(), refLocator0.asText(), arg1);
+			}
+			List<String> fieldNames = new ArrayList<>();
+			arg0.fieldNames().forEachRemaining((String field) -> fieldNames.add(field));
+			Collections.sort(fieldNames);
+			int retval = 0;
+			for (String fieldName:fieldNames) {
+				JsonNode value0 = arg0.get(fieldName);
+				JsonNode value1 = arg1.get(fieldName);
+				retval = compare(value0, value1);
+				if (retval != 0) {
+					return retval;
+				}
+			}
+			return retval;
+		}
+
+		private int compareExternalRef(String refCategory, String refType,
+				String refLocator, JsonNode compare) {
+			JsonNode compRefCategory = compare.get(SpdxConstants.PROP_REFERENCE_CATEGORY);
+			JsonNode compRefType = compare.get(SpdxConstants.PROP_REFERENCE_TYPE);
+			JsonNode compRefLocator = compare.get(SpdxConstants.PROP_REFERENCE_LOCATOR);
+			if (Objects.isNull(compRefCategory) || Objects.isNull(compRefType) || Objects.isNull(compRefLocator) ||
+					!compRefCategory.isTextual() || !compRefType.isTextual() || !compRefLocator.isTextual()) {
+				return 1;
+			}
+			int retval = refCategory.compareTo(compRefCategory.asText());
+			if (retval != 0) {
+				return retval;
+			}
+			retval = refType.compareTo(compRefType.asText());
+			if (retval != 0) {
+				return retval;
+			}
+			return refLocator.compareTo(compRefLocator.asText());
+		}
+
+		private int compareExternalDocumentRef(String document, String externalDocId,
+				JsonNode compare) {
+			JsonNode compDocument = compare.get(SpdxConstants.PROP_EXTERNAL_SPDX_DOCUMENT);
+			JsonNode compExternalDocId = compare.get(SpdxConstants.PROP_EXTERNAL_DOCUMENT_ID);
+			if (Objects.isNull(compDocument) || Objects.isNull(compExternalDocId) ||
+					!compDocument.isTextual() || !compExternalDocId.isTextual()) {
+				return 1;
+			}
+			int retval = document.compareTo(compDocument.asText());
+			if (retval != 0) {
+				return retval;
+			}
+			return externalDocId.compareTo(compExternalDocId.asText());
+		}
+
+		private int compareExtractedLicense(String licenseId, JsonNode compare) {
+			JsonNode compLicenseId = compare.get(SpdxConstants.PROP_LICENSE_ID);
+			if (Objects.isNull(compLicenseId) || !compLicenseId.isTextual()) {
+				return 1;
+			} else {
+				return licenseId.compareTo(compLicenseId.asText());
+			}
+		}
+		
+	};
 
 	private ObjectMapper mapper;
 	private IModelStore store;
@@ -301,7 +433,7 @@ public class JacksonSerializer {
 	 */
 	private ArrayNode toExtractedLicensesArrayNode(String documentUri, String id, String propertyName,
 			ArrayNode relationships) throws InvalidSPDXAnalysisException {
-		ArrayNode retval = mapper.createArrayNode();
+		List<JsonNode> retval = new ArrayList<>();
 		Iterator<Object> extractedLicenses = store.listValues(documentUri, id, propertyName);
 		while (extractedLicenses.hasNext()) {
 			Object extractedLicense = extractedLicenses.next();
@@ -311,7 +443,8 @@ public class JacksonSerializer {
 			}
 			retval.add(typedValueToObjectNode(documentUri, (TypedValue)extractedLicense, relationships));
 		}
-		return retval;
+		retval.sort(NODE_COMPARATOR);
+		return mapper.createArrayNode().addAll(retval);
 	}
 
 	/**
@@ -445,12 +578,15 @@ public class JacksonSerializer {
 	 * @throws InvalidSPDXAnalysisException 
 	 */
 	private ArrayNode toArrayNode(String documentUri, Iterator<Object> valueList, ArrayNode relationships) throws InvalidSPDXAnalysisException {
-		ArrayNode retval = mapper.createArrayNode();
+		ArrayNode unsorted = mapper.createArrayNode();
 		while (valueList.hasNext()) {
 			Object value = valueList.next();
-			addValueToArrayNode(retval, documentUri, value, relationships);
+			addValueToArrayNode(unsorted, documentUri, value, relationships);
 		}
-		return retval;
+		List<JsonNode> nodeList = new ArrayList<>();
+		unsorted.spliterator().forEachRemaining((node) -> nodeList.add(node));
+		Collections.sort(nodeList, NODE_COMPARATOR);
+		return mapper.createArrayNode().addAll(unsorted);
 	}
 	
 	/**
