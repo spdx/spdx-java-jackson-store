@@ -500,28 +500,7 @@ public class MultiFormatStoreTest extends TestCase {
     			doc = inputMapper.readTree(inStream);
     		}
     		JsonNode describes = doc.get("documentDescribes");
-    		Iterator<JsonNode> iter = describes.elements();
-    		int count = 0;
-    		
-			while (iter.hasNext()) {
-	            foundFileA = false;
-	            foundFileB = false;
-	            while (iter.hasNext()) {
-	            	count++;
-	            	String spdxId = iter.next().asText();
-	            	if (fileA.getId().equals(spdxId)) {
-	            		assertFalse(foundFileA);
-	            		foundFileA = true;
-	            	}
-	            	if (fileB.getId().equals(spdxId)) {
-	            		assertFalse(foundFileB);
-	            		foundFileB = true;
-	            	}
-	            }
-	            assertTrue(foundFileA);
-	            assertTrue(foundFileB);
-	            assertEquals(2, count);
-            }
+    		assertTrue(Objects.isNull(describes));
     	} finally {
     		if (serFile.exists()) {
     			serFile.delete();
@@ -622,28 +601,7 @@ public class MultiFormatStoreTest extends TestCase {
     		JsonNode packages = doc.get("packages");
     		JsonNode jsonPkg = packages.elements().next();
     		JsonNode files = jsonPkg.get("hasFiles");
-    		Iterator<JsonNode> iter = files.elements();
-    		int count = 0;
-    		
-			while (iter.hasNext()) {
-	            foundFileA = false;
-	            foundFileB = false;
-	            while (iter.hasNext()) {
-	            	count++;
-	            	String spdxId = iter.next().asText();
-	            	if (fileA.getId().equals(spdxId)) {
-	            		assertFalse(foundFileA);
-	            		foundFileA = true;
-	            	}
-	            	if (fileB.getId().equals(spdxId)) {
-	            		assertFalse(foundFileB);
-	            		foundFileB = true;
-	            	}
-	            }
-	            assertTrue(foundFileA);
-	            assertTrue(foundFileB);
-	            assertEquals(2, count);
-            }
+    		assertTrue(Objects.isNull(files));
     	} finally {
     		if (serFile.exists()) {
     			serFile.delete();
