@@ -462,8 +462,6 @@ public class JacksonSerializer {
 			ArrayNode relationships, Set<String> hasFileIds, Set<String> documentDescribesIds) throws InvalidSPDXAnalysisException {
 		Iterator<Object> valueList = store.listValues(documentUri, element.getId(), 
 				SpdxConstants.PROP_RELATIONSHIP);
-		List<String> hasFileIdsToAdd = new ArrayList<>();
-		List<String> documentDescribesIdsToAdd = new ArrayList<>();
 		while (valueList.hasNext()) {
 			Object value = valueList.next();
 			if (!(value instanceof TypedValue)) {
@@ -480,23 +478,18 @@ public class JacksonSerializer {
 			}
 			Optional<Object> relationshipComment = store.getValue(documentUri, tvValue.getId(), SpdxConstants.RDFS_PROP_COMMENT);
 			String relatedElementId;
-			String relatedElementType;
 			if (relatedSpdxElement.get() instanceof TypedValue) {
 				relatedElementId = ((TypedValue)relatedSpdxElement.get()).getId();
-				relatedElementType = ((TypedValue)relatedSpdxElement.get()).getType();
 			} else if (relatedSpdxElement.get() instanceof IndividualUriValue) {
 				String externalUri = ((IndividualUriValue)relatedSpdxElement.get()).getIndividualURI();
 				if (SpdxConstants.URI_VALUE_NONE.equals(externalUri)) {
 					relatedElementId = SpdxConstants.NONE_VALUE;
-					relatedElementType = SpdxConstants.CLASS_SPDX_NONE_ELEMENT;
 				} else if (SpdxConstants.URI_VALUE_NOASSERTION.equals(externalUri)) {
 					relatedElementId = SpdxConstants.NOASSERTION_VALUE;
-					relatedElementType = SpdxConstants.CLASS_SPDX_NOASSERTION_ELEMENT;
 				} else if (SpdxConstants.EXTERNAL_SPDX_ELEMENT_URI_PATTERN.matcher(externalUri).matches()) {
 					// external SPDX element
 					ExternalSpdxElement externalElement = ExternalSpdxElement.uriToExternalSpdxElement(externalUri, store, documentUri, null);
 					relatedElementId = externalElement.getExternalDocumentId() + ":" + externalElement.getExternalElementId();
-					relatedElementType = SpdxConstants.CLASS_EXTERNAL_SPDX_ELEMENT;
 				} else {
 					throw new SpdxInvalidTypeException("SPDX element must be of SpdxElement, SpdxNoneElement, SpdxNoAssertionElement or external SPDX element type.  URI does not match pattern for external element: "+externalUri);
 				}
@@ -513,59 +506,14 @@ public class JacksonSerializer {
 				throw new SpdxInvalidTypeException("Expected RelationshipType type for relationshipType property.  Unexpected type "+relatedSpdxElement.get().getClass().toString());
 			}
 			String relationshipTypeStr = individualUriToString(documentUri, ((IndividualUriValue)relationshipType.get()).getIndividualURI());
-			if (RelationshipType.DESCRIBES.toString().equals(relationshipTypeStr) && 
-					SpdxConstants.CLASS_SPDX_DOCUMENT.equals(element.getType()) &&
-					!documentDescribesIds.contains(relatedElementId)) {
-				// This needs to be added as a documentDescribes property and not as a relationship
-				documentDescribesIdsToAdd.add(relatedElementId);
-				documentDescribesIds.add(relatedElementId);
-			} else if (RelationshipType.CONTAINS.toString().equals(relationshipTypeStr) && 
-					SpdxConstants.CLASS_SPDX_PACKAGE.equals(element.getType()) &&
-					SpdxConstants.CLASS_SPDX_FILE.equals(relatedElementType) &&
-					!hasFileIds.contains(relatedElementId)) {
-				// This needs to be added as a hasFiles property
-				//TODO: Check if hasFile is deprecated - if so, remove this section
-				hasFileIdsToAdd.add(relatedElementId);
-				hasFileIds.add(relatedElementId);
-			} else {
-				ObjectNode relationship = mapper.createObjectNode();
-				relationship.put(SpdxConstants.PROP_SPDX_ELEMENTID, element.getId());
-				relationship.put(SpdxConstants.PROP_RELATIONSHIP_TYPE, relationshipTypeStr);
-				relationship.put(SpdxConstants.PROP_RELATED_SPDX_ELEMENT, relatedElementId);
-				if (relationshipComment.isPresent()) {
-					relationship.put(SpdxConstants.RDFS_PROP_COMMENT, (String)relationshipComment.get());
-				}
-				relationships.add(relationship);
+			ObjectNode relationship = mapper.createObjectNode();
+			relationship.put(SpdxConstants.PROP_SPDX_ELEMENTID, element.getId());
+			relationship.put(SpdxConstants.PROP_RELATIONSHIP_TYPE, relationshipTypeStr);
+			relationship.put(SpdxConstants.PROP_RELATED_SPDX_ELEMENT, relatedElementId);
+			if (relationshipComment.isPresent()) {
+				relationship.put(SpdxConstants.RDFS_PROP_COMMENT, (String)relationshipComment.get());
 			}
-		}
-		if (hasFileIdsToAdd.size() > 0) {
-			JsonNode jnFiles = elementNode.get(
-					MultiFormatStore.propertyNameToCollectionPropertyName(SpdxConstants.PROP_PACKAGE_FILE));
-			if (Objects.isNull(jnFiles)) {
-				jnFiles = mapper.createArrayNode();
-				elementNode.set(
-						MultiFormatStore.propertyNameToCollectionPropertyName(SpdxConstants.PROP_PACKAGE_FILE),
-						jnFiles);
-			}
-			if (!(jnFiles instanceof ArrayNode)) {
-				throw new InvalidSPDXAnalysisException("hasFile is not an array");
-			}
-			for (String hasFileId:hasFileIdsToAdd) {
-				((ArrayNode)jnFiles).add(hasFileId);
-			}
-		}
-		if (documentDescribesIdsToAdd.size() > 0) {
-			JsonNode jnDescribes = elementNode.get(SpdxConstants.PROP_DOCUMENT_DESCRIBES);
-			if (Objects.isNull(jnDescribes)) {
-				jnDescribes = mapper.createArrayNode();
-				elementNode.set(SpdxConstants.PROP_DOCUMENT_DESCRIBES, jnDescribes);
-			}
-			if (!(jnDescribes instanceof ArrayNode)) {
-				throw new InvalidSPDXAnalysisException("Describes is not an array");
-			}
-			for (String describesId:documentDescribesIdsToAdd) {
-				((ArrayNode)jnDescribes).add(describesId);
-			}
+			relationships.add(relationship);
 		}
 	}
 	
