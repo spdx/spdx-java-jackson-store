@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Document>
+  <SPDXID>SPDXRef-DOCUMENT</SPDXID>
+  <spdxVersion>SPDX-2.3</spdxVersion>
+  <creationInfo>
+    <created>2023-05-26T12:24:52Z</created>
+    <creators>Tool: SPDX Gen - 1.2.3</creators>
+  </creationInfo>
+  <name>pkg:generic/sonatype/iq_application_Test%20App%20f39e9e5e7b73437aade319bc133488f4</name>
+  <dataLicense>CC0-1.0</dataLicense>
+  <documentNamespace>http://localhost:8070/ui/links/application/d250688de91244f2bdb44ba4f56c34fb</documentNamespace>
+  <packages>
+    <SPDXID>SPDXRef-generic-sonatype-iq-application-Test-App-f39e9e5e7b73437aade319bc133488f4</SPDXID>
+    <externalRefs>
+      <referenceCategory>PACKAGE-MANAGER</referenceCategory>
+      <referenceLocator>pkg:generic/sonatype/iq_application_Test%20App%20f39e9e5e7b73437aade319bc133488f4@dbfb526ba560483dad0cfb17391e7f8d</referenceLocator>
+      <referenceType>purl</referenceType>
+    </externalRefs>
+    <filesAnalyzed>false</filesAnalyzed>
+    <licenseConcluded>Apache-2.0</licenseConcluded>
+    <licenseDeclared>Apache-2.0</licenseDeclared>
+    <name>sonatype:iq_application_Test App f39e9e5e7b73437aade319bc133488f4</name>
+    <versionInfo>dbfb526ba560483dad0cfb17391e7f8d</versionInfo>
+    <downloadLocation>NONE</downloadLocation>
+  </packages>
+  <relationships>
+    <spdxElementId>SPDXRef-DOCUMENT</spdxElementId>
+    <relationshipType>DESCRIBES</relationshipType>
+    <relatedSpdxElement>SPDXRef-generic-sonatype-iq-application-Test-App-f39e9e5e7b73437aade319bc133488f4</relatedSpdxElement>
+  </relationships>
+</Document>
