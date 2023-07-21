@@ -17,6 +17,7 @@
  */
 package org.spdx.jacksonstore;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -36,6 +37,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import org.spdx.jacksonstore.MultiFormatStore.Format;
+import org.spdx.jacksonstore.MultiFormatStore.Verbose;
 import org.spdx.library.InvalidSPDXAnalysisException;
 import org.spdx.library.ModelCopyManager;
 import org.spdx.library.SpdxConstants;
@@ -53,6 +55,7 @@ import org.spdx.library.model.enumerations.RelationshipType;
 import org.spdx.library.model.license.AnyLicenseInfo;
 import org.spdx.library.model.license.LicenseInfoFactory;
 import org.spdx.library.model.license.SpdxNoAssertionLicense;
+import org.spdx.storage.IModelStore;
 import org.spdx.storage.ISerializableModelStore;
 import org.spdx.storage.simple.InMemSpdxStore;
 import org.spdx.utility.compare.SpdxCompareException;
@@ -77,6 +80,7 @@ public class MultiFormatStoreTest extends TestCase {
 	// This is a copy of SPDXJSONExample-v2.2.spdx.json with duplicate hasFile/CONTAINS relationships and duplicate documentDescribes/DESCRIBES relationship
 	static final String JSON_WITH_DUPLICATES_FILE_PATH = "testResources" + File.separator + "duplicated.json";
 	static final String JSON_NO_HAS_FILES_FILE_PATH = "testResources" + File.separator + "noHasFilesDescribes.json";
+	static final String XML_1REL_FILE_PATH = "testResources" + File.separator + "SPDXXML-SingleRel-v2.3.spdx.xml";
 	/* (non-Javadoc)
 	 * @see junit.framework.TestCase#setUp()
 	 */
@@ -608,5 +612,18 @@ public class MultiFormatStoreTest extends TestCase {
     		}
     		tempDirPath.toFile().delete();
     	}
+	}
+
+	public void testDeSerializeXml_singleRelationship() throws InvalidSPDXAnalysisException, IOException {
+		File xmlFile = new File(XML_1REL_FILE_PATH);
+		IModelStore modelStore = new InMemSpdxStore();
+		MultiFormatStore inputStore = new MultiFormatStore(modelStore, Format.XML, Verbose.COMPACT);
+		try (InputStream in = new BufferedInputStream(Files.newInputStream(xmlFile.toPath()))) {
+			inputStore.deSerialize(in, false);
+		}
+		String documentUri = inputStore.getDocumentUris().get(0);
+		SpdxDocument inputDocument = new SpdxDocument(inputStore, documentUri, null, false);
+		List<String> verify = inputDocument.verify();
+		assertEquals(0, verify.size());
 	}
 }

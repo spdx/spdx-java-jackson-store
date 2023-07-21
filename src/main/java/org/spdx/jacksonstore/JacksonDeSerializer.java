@@ -222,45 +222,58 @@ public class JacksonDeSerializer {
 		if (Objects.isNull(jsonNode)) {
 			return;
 		}
-		if (!jsonNode.isArray()) {
-			throw new InvalidSPDXAnalysisException("Relationships are expected to be in an array for type Relationship");
+		if (jsonNode.isArray()) {
+			Iterator<JsonNode> iter = jsonNode.elements();
+			while (iter.hasNext()) {
+				restoreRelationship(documentNamespace, iter.next(), addedElements);
+			}
+		} else {
+			// This can occur if there is only a single relationship in an XML document
+			restoreRelationship(documentNamespace, jsonNode, addedElements);
 		}
-		Iterator<JsonNode> iter = jsonNode.elements();
-		while (iter.hasNext()) {
-			JsonNode relationship = iter.next();
-			JsonNode elementIdNode = relationship.get(SpdxConstants.PROP_SPDX_ELEMENTID);
-			if (Objects.isNull(elementIdNode) || !elementIdNode.isTextual()) {
-				throw new InvalidSPDXAnalysisException("Missing SPDX element ID");
-			}
-			TypedValue element = addedElements.get(elementIdNode.asText());
-			if (Objects.isNull(element)) {
-				throw new InvalidSPDXAnalysisException("Missing SPDX element for ID "+elementIdNode.asText());
-			}
-			JsonNode relationshipTypeNode = relationship.get(SpdxConstants.PROP_RELATIONSHIP_TYPE);
-			if (Objects.isNull(relationshipTypeNode) || !relationshipTypeNode.isTextual()) {
-				throw new InvalidSPDXAnalysisException("Missing required relationship type");
-			}
-			String relationshipTypeUri = null;
-			try {
-				relationshipTypeUri = RelationshipType.valueOf(relationshipTypeNode.asText()).getIndividualURI();
-			} catch(Exception ex) {
-				throw new InvalidSPDXAnalysisException("Unknown relationship type: "+relationshipTypeNode.asText());
-			}
-			SimpleUriValue relationshipType = new SimpleUriValue(relationshipTypeUri);
-			JsonNode relatedElementNode = relationship.get(SpdxConstants.PROP_RELATED_SPDX_ELEMENT);
-			if (Objects.isNull(relatedElementNode) || !relatedElementNode.isTextual()) {
-				throw new InvalidSPDXAnalysisException("Missing required related element");
-			}
-			Object relatedElement = idToObjectValue(documentNamespace, relatedElementNode.asText(), addedElements);
-			JsonNode commentNode = relationship.get(SpdxConstants.RDFS_PROP_COMMENT);
-			Optional<String> relationshipComment;
-			if (Objects.isNull(commentNode) || !commentNode.isTextual()) {
-				relationshipComment = Optional.empty();
-			} else {
-				relationshipComment = Optional.of(commentNode.asText());
-			}
-			addRelationship(documentNamespace, element.getId(), relationshipType, relatedElement, relationshipComment);
+	}
+
+	/**
+	 * Restore a relationship adding it as properties to the correct elements
+	 * @param documentNamespace
+	 * @param relationship
+	 * @param addedElements
+	 * @throws InvalidSPDXAnalysisException
+	 */
+	private void restoreRelationship(String documentNamespace, JsonNode relationship,
+																	 Map<String, TypedValue> addedElements) throws InvalidSPDXAnalysisException {
+		JsonNode elementIdNode = relationship.get(SpdxConstants.PROP_SPDX_ELEMENTID);
+		if (Objects.isNull(elementIdNode) || !elementIdNode.isTextual()) {
+			throw new InvalidSPDXAnalysisException("Missing SPDX element ID");
 		}
+		TypedValue element = addedElements.get(elementIdNode.asText());
+		if (Objects.isNull(element)) {
+			throw new InvalidSPDXAnalysisException("Missing SPDX element for ID "+elementIdNode.asText());
+		}
+		JsonNode relationshipTypeNode = relationship.get(SpdxConstants.PROP_RELATIONSHIP_TYPE);
+		if (Objects.isNull(relationshipTypeNode) || !relationshipTypeNode.isTextual()) {
+			throw new InvalidSPDXAnalysisException("Missing required relationship type");
+		}
+		String relationshipTypeUri = null;
+		try {
+			relationshipTypeUri = RelationshipType.valueOf(relationshipTypeNode.asText()).getIndividualURI();
+		} catch(Exception ex) {
+			throw new InvalidSPDXAnalysisException("Unknown relationship type: "+relationshipTypeNode.asText());
+		}
+		SimpleUriValue relationshipType = new SimpleUriValue(relationshipTypeUri);
+		JsonNode relatedElementNode = relationship.get(SpdxConstants.PROP_RELATED_SPDX_ELEMENT);
+		if (Objects.isNull(relatedElementNode) || !relatedElementNode.isTextual()) {
+			throw new InvalidSPDXAnalysisException("Missing required related element");
+		}
+		Object relatedElement = idToObjectValue(documentNamespace, relatedElementNode.asText(), addedElements);
+		JsonNode commentNode = relationship.get(SpdxConstants.RDFS_PROP_COMMENT);
+		Optional<String> relationshipComment;
+		if (Objects.isNull(commentNode) || !commentNode.isTextual()) {
+			relationshipComment = Optional.empty();
+		} else {
+			relationshipComment = Optional.of(commentNode.asText());
+		}
+		addRelationship(documentNamespace, element.getId(), relationshipType, relatedElement, relationshipComment);
 	}
 
 	/**
