@@ -1,10 +1,9 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.spdx</groupId>
   <artifactId>spdx-jackson-store</artifactId>
-  <version>1.1.8-SNAPSHOT</version>
+  <version>1.1.8</version>
   <packaging>jar</packaging>
 
   <name>spdx-jackson-store</name>
@@ -15,7 +14,7 @@ This store supports serializing and deserializing files in JSON, YAML and XML fo
   	<url>https://github.com/spdx/spdx-java-jackson-store</url>
   	<connection>scm:git:ssh://git@github.com:spdx/spdx-java-jackson-store</connection>
    	<developerConnection>scm:git:git@github.com:spdx/spdx-java-jackson-store</developerConnection>
-   	<tag>master</tag>
+   	<tag>v1.1.8</tag>
   </scm>
   <issueManagement>
   	<system>Github</system>
