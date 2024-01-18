@@ -42,6 +42,7 @@ import org.spdx.library.model.SpdxElement;
 import org.spdx.library.model.SpdxInvalidTypeException;
 import org.spdx.library.model.SpdxModelFactory;
 import org.spdx.library.model.TypedValue;
+import org.spdx.library.model.enumerations.Purpose;
 import org.spdx.library.model.enumerations.RelationshipType;
 import org.spdx.library.model.enumerations.SpdxEnumFactory;
 import org.spdx.library.model.license.AnyLicenseInfo;
@@ -602,7 +603,7 @@ public class JacksonSerializer {
 	private String individualUriToString(String documentUri, String uri) throws InvalidSPDXAnalysisException {
 		Object enumval = SpdxEnumFactory.uriToEnum.get(uri);
 		if (Objects.nonNull(enumval)) {
-			if (enumval instanceof RelationshipType) {
+			if (enumval instanceof RelationshipType || enumval instanceof Purpose) {
 				return enumval.toString();
 			} else {
 				return enumval.toString().replaceAll("_", "-");
