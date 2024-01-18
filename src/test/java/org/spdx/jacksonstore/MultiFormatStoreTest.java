@@ -64,6 +64,11 @@ import org.spdx.utility.compare.SpdxComparer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.github.fge.jackson.JsonLoader;
+import com.github.fge.jsonschema.core.exceptions.ProcessingException;
+import com.github.fge.jsonschema.core.report.ProcessingReport;
+import com.github.fge.jsonschema.main.JsonSchema;
+import com.github.fge.jsonschema.main.JsonSchemaFactory;
 
 import junit.framework.TestCase;
 
@@ -81,6 +86,8 @@ public class MultiFormatStoreTest extends TestCase {
 	static final String JSON_WITH_DUPLICATES_FILE_PATH = "testResources" + File.separator + "duplicated.json";
 	static final String JSON_NO_HAS_FILES_FILE_PATH = "testResources" + File.separator + "noHasFilesDescribes.json";
 	static final String XML_1REL_FILE_PATH = "testResources" + File.separator + "SPDXXML-SingleRel-v2.3.spdx.xml";
+	static final String JSON_SCHEMA_V2_3 = "testResources" + File.separator + "spdx-schema.json";
+	
 	/* (non-Javadoc)
 	 * @see junit.framework.TestCase#setUp()
 	 */
@@ -625,5 +632,60 @@ public class MultiFormatStoreTest extends TestCase {
 		SpdxDocument inputDocument = new SpdxDocument(inputStore, documentUri, null, false);
 		List<String> verify = inputDocument.verify();
 		assertEquals(0, verify.size());
+	}
+	
+	/**
+	 * Test serialized json validates
+	 * @throws IOException 
+	 * @throws InvalidSPDXAnalysisException 
+	 * @throws SpdxCompareException 
+	 * @throws ProcessingException 
+	 */
+	public void testSerializeJson() throws InvalidSPDXAnalysisException, IOException, SpdxCompareException, ProcessingException {
+		File jsonFile = new File(JSON_FILE_PATH);
+		MultiFormatStore inputStore = new MultiFormatStore(new InMemSpdxStore(), Format.JSON_PRETTY);
+		try (InputStream input = new FileInputStream(jsonFile)) {
+			inputStore.deSerialize(input, false);
+		}
+		String documentUri = inputStore.getDocumentUris().get(0);
+		SpdxDocument inputDocument = new SpdxDocument(inputStore, documentUri, null, false);
+		// Add a purpose of operating system to make sure the underscore is preserved
+		SpdxPackage pkg = inputDocument.createPackage(SpdxConstants.SPDX_ELEMENT_REF_PRENUM + "-purpose", 
+				"Package with a Purpose", new SpdxNoAssertionLicense(), "NoAssertion", 
+				new SpdxNoAssertionLicense())
+				.setPrimaryPurpose(Purpose.OPERATING_SYSTEM)
+				.setDownloadLocation("NOASSERTION")
+				.setFilesAnalyzed(false)
+				.build();
+		inputDocument.addRelationship(inputDocument.createRelationship(pkg, RelationshipType.DESCRIBES, "Describe another package"));
+		List<String> verify = inputDocument.verify();
+		assertEquals(0, verify.size());
+		// test that it deserializes correctly
+		Path tempDirPath = Files.createTempDirectory("mfsTest2");
+		File serFile = tempDirPath.resolve("testspdx.json").toFile();
+		assertTrue(serFile.createNewFile());
+		try {
+			try (OutputStream stream = new FileOutputStream(serFile)) {
+				inputStore.serialize(documentUri, stream);
+			}
+			ISerializableModelStore resultStore = new MultiFormatStore(new InMemSpdxStore(), MultiFormatStore.Format.JSON);
+			try (InputStream inStream = new FileInputStream(serFile)) {
+				assertEquals(documentUri, resultStore.deSerialize(inStream, false));
+			}
+			SpdxDocument resultDoc = SpdxModelFactory.createSpdxDocument(resultStore, documentUri, new ModelCopyManager());
+			verify = resultDoc.verify();
+			assertEquals(0, verify.size());
+			// validate schema file
+			JsonNode spdxJsonSchema = JsonLoader.fromFile(new File(JSON_SCHEMA_V2_3));
+			final JsonSchema schema = JsonSchemaFactory.byDefault().getJsonSchema(spdxJsonSchema);
+			JsonNode spdxDocJson = JsonLoader.fromFile(serFile);
+			ProcessingReport report = schema.validateUnchecked(spdxDocJson, true);
+			assertTrue(report.isSuccess());
+		} finally {
+			if (serFile.exists()) {
+				serFile.delete();
+			}
+			tempDirPath.toFile().delete();
+		}
 	}
 }
