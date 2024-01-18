@@ -3,7 +3,7 @@
 
   <groupId>org.spdx</groupId>
   <artifactId>spdx-jackson-store</artifactId>
-  <version>1.1.9.1</version>
+  <version>1.1.10-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>spdx-jackson-store</name>
@@ -14,7 +14,7 @@ This store supports serializing and deserializing files in JSON, YAML and XML fo
   	<url>https://github.com/spdx/spdx-java-jackson-store</url>
   	<connection>scm:git:ssh://git@github.com:spdx/spdx-java-jackson-store</connection>
    	<developerConnection>scm:git:git@github.com:spdx/spdx-java-jackson-store</developerConnection>
-   	<tag>v1.1.9.1</tag>
+   	<tag>master</tag>
   </scm>
   <issueManagement>
   	<system>Github</system>
