@@ -36,25 +36,29 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import org.spdx.core.DefaultModelStore;
+import org.spdx.core.InvalidSPDXAnalysisException;
+import org.spdx.core.ModelRegistry;
 import org.spdx.jacksonstore.MultiFormatStore.Format;
 import org.spdx.jacksonstore.MultiFormatStore.Verbose;
-import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.library.LicenseInfoFactory;
 import org.spdx.library.ModelCopyManager;
-import org.spdx.library.SpdxConstants;
-import org.spdx.library.Version;
-import org.spdx.library.model.Checksum;
-import org.spdx.library.model.Relationship;
-import org.spdx.library.model.SpdxDocument;
-import org.spdx.library.model.SpdxElement;
-import org.spdx.library.model.SpdxFile;
-import org.spdx.library.model.SpdxModelFactory;
-import org.spdx.library.model.SpdxPackage;
-import org.spdx.library.model.enumerations.ChecksumAlgorithm;
-import org.spdx.library.model.enumerations.Purpose;
-import org.spdx.library.model.enumerations.RelationshipType;
-import org.spdx.library.model.license.AnyLicenseInfo;
-import org.spdx.library.model.license.LicenseInfoFactory;
-import org.spdx.library.model.license.SpdxNoAssertionLicense;
+import org.spdx.library.model.v2.Checksum;
+import org.spdx.library.model.v2.Relationship;
+import org.spdx.library.model.v2.SpdxConstantsCompatV2;
+import org.spdx.library.model.v2.SpdxDocument;
+import org.spdx.library.model.v2.SpdxElement;
+import org.spdx.library.model.v2.SpdxFile;
+import org.spdx.library.model.v2.SpdxModelFactory;
+import org.spdx.library.model.v2.SpdxModelInfoV2_X;
+import org.spdx.library.model.v2.SpdxPackage;
+import org.spdx.library.model.v2.Version;
+import org.spdx.library.model.v2.enumerations.ChecksumAlgorithm;
+import org.spdx.library.model.v2.enumerations.Purpose;
+import org.spdx.library.model.v2.enumerations.RelationshipType;
+import org.spdx.library.model.v2.license.AnyLicenseInfo;
+import org.spdx.library.model.v2.license.SpdxNoAssertionLicense;
+import org.spdx.library.model.v3.SpdxModelInfoV3_0;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.ISerializableModelStore;
 import org.spdx.storage.simple.InMemSpdxStore;
@@ -93,6 +97,9 @@ public class MultiFormatStoreTest extends TestCase {
 	 */
 	protected void setUp() throws Exception {
 		super.setUp();
+		ModelRegistry.getModelRegistry().registerModel(new SpdxModelInfoV2_X());
+		ModelRegistry.getModelRegistry().registerModel(new SpdxModelInfoV3_0());
+		DefaultModelStore.initialize(new InMemSpdxStore(), "http://test/doc", new ModelCopyManager());
 	}
 
 	/* (non-Javadoc)
@@ -114,7 +121,7 @@ public class MultiFormatStoreTest extends TestCase {
 		try (InputStream input = new FileInputStream(jsonFile)) {
 			inputStore.deSerialize(input, false);
 		}
-		String documentUri = inputStore.getDocumentUris().get(0);
+		String documentUri = inputStore.getDocumentUris().toArray(new String[inputStore.getDocumentUris().size()])[0];
 		SpdxDocument inputDocument = new SpdxDocument(inputStore, documentUri, null, false);
 		List<String> verify = inputDocument.verify();
 		assertEquals(0, verify.size());
@@ -153,7 +160,7 @@ public class MultiFormatStoreTest extends TestCase {
 		try (InputStream input = new FileInputStream(jsonFile)) {
 			inputStore.deSerialize(input, false);
 		}
-		String documentUri = inputStore.getDocumentUris().get(0);
+		String documentUri = inputStore.getDocumentUris().toArray(new String[inputStore.getDocumentUris().size()])[0];
 		SpdxDocument inputDocument = new SpdxDocument(inputStore, documentUri, null, false);
 		List<String> verify = inputDocument.verify();
 		assertEquals(0, verify.size());
@@ -212,7 +219,7 @@ public class MultiFormatStoreTest extends TestCase {
 		try (InputStream input = new FileInputStream(jsonFile)) {
 			inputStore.deSerialize(input, false);
 		}
-		String documentUri = inputStore.getDocumentUris().get(0);
+		String documentUri = inputStore.getDocumentUris().toArray(new String[inputStore.getDocumentUris().size()])[0];
 		SpdxDocument inputDocument = new SpdxDocument(inputStore, documentUri, null, false);
 		List<String> verify = inputDocument.verify();
 		assertEquals(0, verify.size());
@@ -244,7 +251,7 @@ public class MultiFormatStoreTest extends TestCase {
 		try (InputStream input = new FileInputStream(jsonFile)) {
 			inputStore.deSerialize(input, false);
 		}
-		String documentUri = inputStore.getDocumentUris().get(0);
+		String documentUri = inputStore.getDocumentUris().toArray(new String[inputStore.getDocumentUris().size()])[0];
 		SpdxDocument inputDocument = new SpdxDocument(inputStore, documentUri, null, false);
 		List<String> verify = inputDocument.verify();
 		assertEquals(0, verify.size());
@@ -291,7 +298,7 @@ public class MultiFormatStoreTest extends TestCase {
 		try (InputStream input = new FileInputStream(jsonFile)) {
 			inputStore.deSerialize(input, false);
 		}
-		String documentUri = inputStore.getDocumentUris().get(0);
+		String documentUri = inputStore.getDocumentUris().toArray(new String[inputStore.getDocumentUris().size()])[0];
 		SpdxDocument inputDocument = new SpdxDocument(inputStore, documentUri, null, false);
 		List<String> verify = inputDocument.verify();
 		assertEquals(0, verify.size());
@@ -320,7 +327,7 @@ public class MultiFormatStoreTest extends TestCase {
 		try (InputStream input = new FileInputStream(jsonFile)) {
 			inputStore.deSerialize(input, false);
 		}
-		String documentUri = inputStore.getDocumentUris().get(0);
+		String documentUri = inputStore.getDocumentUris().toArray(new String[inputStore.getDocumentUris().size()])[0];
 		SpdxDocument inputDocument = new SpdxDocument(inputStore, documentUri, null, false);
 		List<String> verify = inputDocument.verify();
 		assertEquals(0, verify.size());
@@ -352,11 +359,11 @@ public class MultiFormatStoreTest extends TestCase {
 		String documentUri = "https://someuri";
         ModelCopyManager copyManager = new ModelCopyManager();
         ISerializableModelStore modelStore = new MultiFormatStore(new InMemSpdxStore(), MultiFormatStore.Format.JSON_PRETTY);
-        SpdxDocument document = SpdxModelFactory.createSpdxDocument(modelStore, documentUri, copyManager);
+        SpdxDocument document = SpdxModelFactory.createSpdxDocumentV2(modelStore, documentUri, copyManager);
         document.setSpecVersion(Version.TWO_POINT_THREE_VERSION);
         document.setName("SPDX-tool-test");
         Checksum sha1Checksum = Checksum.create(modelStore, documentUri, ChecksumAlgorithm.SHA1, "d6a770ba38583ed4bb4525bd96e50461655d2758");
-        AnyLicenseInfo concludedLicense = LicenseInfoFactory.parseSPDXLicenseString("LGPL-2.0-only OR LicenseRef-2");
+        AnyLicenseInfo concludedLicense = LicenseInfoFactory.parseSPDXLicenseStringCompatV2("LGPL-2.0-only OR LicenseRef-2");
         SpdxFile fileA = document.createSpdxFile("SPDXRef-fileA", "./package/fileA.c", concludedLicense,
                         Arrays.asList(new AnyLicenseInfo[0]), "Copyright 2008-2010 John Smith", sha1Checksum)
                 .build();
@@ -386,7 +393,7 @@ public class MultiFormatStoreTest extends TestCase {
     		try (InputStream inStream = new FileInputStream(serFile)) {
     			assertEquals(documentUri, resultStore.deSerialize(inStream, false));
     		}
-    		document = SpdxModelFactory.createSpdxDocument(resultStore, documentUri, copyManager);
+    		document = SpdxModelFactory.createSpdxDocumentV2(resultStore, documentUri, copyManager);
     		docrels = document.getRelationships();
             assertEquals(1, docrels.size());
             for (Relationship rel:docrels) {
@@ -416,7 +423,7 @@ public class MultiFormatStoreTest extends TestCase {
 	            	assertEquals("SPDXRef-DOCUMENT", relationshipNode.get("spdxElementId").asText());
 	            	assertEquals(fileA.getId(), relationshipNode.get("relatedSpdxElement").asText());
 	            	assertEquals(RelationshipType.CONTAINS.toString(), relationshipNode.get("relationshipType").asText());
-	            	assertEquals(relationshipComment, relationshipNode.get(SpdxConstants.RDFS_PROP_COMMENT).asText());
+	            	assertEquals(relationshipComment, relationshipNode.get(SpdxConstantsCompatV2.RDFS_PROP_COMMENT.getName()).asText());
 	            	
 	            }
 	            assertEquals(1, count);
@@ -439,11 +446,11 @@ public class MultiFormatStoreTest extends TestCase {
 		String documentUri = "https://someuri";
         ModelCopyManager copyManager = new ModelCopyManager();
         ISerializableModelStore modelStore = new MultiFormatStore(new InMemSpdxStore(), MultiFormatStore.Format.JSON_PRETTY);
-        SpdxDocument document = SpdxModelFactory.createSpdxDocument(modelStore, documentUri, copyManager);
+        SpdxDocument document = SpdxModelFactory.createSpdxDocumentV2(modelStore, documentUri, copyManager);
         document.setSpecVersion(Version.TWO_POINT_THREE_VERSION);
         document.setName("SPDX-tool-test");
         Checksum sha1Checksum = Checksum.create(modelStore, documentUri, ChecksumAlgorithm.SHA1, "d6a770ba38583ed4bb4525bd96e50461655d2758");
-        AnyLicenseInfo concludedLicense = LicenseInfoFactory.parseSPDXLicenseString("LGPL-2.0-only OR LicenseRef-2");
+        AnyLicenseInfo concludedLicense = LicenseInfoFactory.parseSPDXLicenseStringCompatV2("LGPL-2.0-only OR LicenseRef-2");
         SpdxFile fileA = document.createSpdxFile("SPDXRef-fileA", "./package/fileA.c", concludedLicense,
                         Arrays.asList(new AnyLicenseInfo[0]), "Copyright 2008-2010 John Smith", sha1Checksum)
                 .build();
@@ -483,7 +490,7 @@ public class MultiFormatStoreTest extends TestCase {
     		try (InputStream inStream = new FileInputStream(serFile)) {
     			assertEquals(documentUri, resultStore.deSerialize(inStream, false));
     		}
-    		document = SpdxModelFactory.createSpdxDocument(resultStore, documentUri, copyManager);
+    		document = SpdxModelFactory.createSpdxDocumentV2(resultStore, documentUri, copyManager);
     		assertEquals(2, document.getDocumentDescribes().size());
             assertTrue(document.getDocumentDescribes().contains(fileA));
             assertTrue(document.getDocumentDescribes().contains(fileB));
@@ -530,11 +537,11 @@ public class MultiFormatStoreTest extends TestCase {
 		String documentUri = "https://someuri";
         ModelCopyManager copyManager = new ModelCopyManager();
         ISerializableModelStore modelStore = new MultiFormatStore(new InMemSpdxStore(), MultiFormatStore.Format.JSON_PRETTY);
-        SpdxDocument document = SpdxModelFactory.createSpdxDocument(modelStore, documentUri, copyManager);
+        SpdxDocument document = SpdxModelFactory.createSpdxDocumentV2(modelStore, documentUri, copyManager);
         document.setSpecVersion(Version.TWO_POINT_THREE_VERSION);
         document.setName("SPDX-tool-test");
         Checksum sha1Checksum = Checksum.create(modelStore, documentUri, ChecksumAlgorithm.SHA1, "d6a770ba38583ed4bb4525bd96e50461655d2758");
-        AnyLicenseInfo concludedLicense = LicenseInfoFactory.parseSPDXLicenseString("LGPL-2.0-only OR LicenseRef-2");
+        AnyLicenseInfo concludedLicense = LicenseInfoFactory.parseSPDXLicenseStringCompatV2("LGPL-2.0-only OR LicenseRef-2");
         SpdxFile fileA = document.createSpdxFile("SPDXRef-fileA", "./package/fileA.c", concludedLicense,
                         Arrays.asList(new AnyLicenseInfo[0]), "Copyright 2008-2010 John Smith", sha1Checksum)
                 .build();
@@ -580,7 +587,7 @@ public class MultiFormatStoreTest extends TestCase {
     		try (InputStream inStream = new FileInputStream(serFile)) {
     			assertEquals(documentUri, resultStore.deSerialize(inStream, false));
     		}
-    		document = SpdxModelFactory.createSpdxDocument(resultStore, documentUri, copyManager);
+    		document = SpdxModelFactory.createSpdxDocumentV2(resultStore, documentUri, copyManager);
     		pkg = (SpdxPackage)document.getDocumentDescribes().toArray(new SpdxElement[1])[0];
     		
     		assertEquals(2, pkg.getFiles().size());
@@ -628,7 +635,7 @@ public class MultiFormatStoreTest extends TestCase {
 		try (InputStream in = new BufferedInputStream(Files.newInputStream(xmlFile.toPath()))) {
 			inputStore.deSerialize(in, false);
 		}
-		String documentUri = inputStore.getDocumentUris().get(0);
+		String documentUri = inputStore.getDocumentUris().toArray(new String[inputStore.getDocumentUris().size()])[0];
 		SpdxDocument inputDocument = new SpdxDocument(inputStore, documentUri, null, false);
 		List<String> verify = inputDocument.verify();
 		assertEquals(0, verify.size());
@@ -647,10 +654,10 @@ public class MultiFormatStoreTest extends TestCase {
 		try (InputStream input = new FileInputStream(jsonFile)) {
 			inputStore.deSerialize(input, false);
 		}
-		String documentUri = inputStore.getDocumentUris().get(0);
+		String documentUri = inputStore.getDocumentUris().toArray(new String[inputStore.getDocumentUris().size()])[0];
 		SpdxDocument inputDocument = new SpdxDocument(inputStore, documentUri, null, false);
 		// Add a purpose of operating system to make sure the underscore is preserved
-		SpdxPackage pkg = inputDocument.createPackage(SpdxConstants.SPDX_ELEMENT_REF_PRENUM + "-purpose", 
+		SpdxPackage pkg = inputDocument.createPackage(SpdxConstantsCompatV2.SPDX_ELEMENT_REF_PRENUM + "-purpose", 
 				"Package with a Purpose", new SpdxNoAssertionLicense(), "NoAssertion", 
 				new SpdxNoAssertionLicense())
 				.setPrimaryPurpose(Purpose.OPERATING_SYSTEM)
@@ -672,7 +679,7 @@ public class MultiFormatStoreTest extends TestCase {
 			try (InputStream inStream = new FileInputStream(serFile)) {
 				assertEquals(documentUri, resultStore.deSerialize(inStream, false));
 			}
-			SpdxDocument resultDoc = SpdxModelFactory.createSpdxDocument(resultStore, documentUri, new ModelCopyManager());
+			SpdxDocument resultDoc = SpdxModelFactory.createSpdxDocumentV2(resultStore, documentUri, new ModelCopyManager());
 			verify = resultDoc.verify();
 			assertEquals(0, verify.size());
 			// validate schema file

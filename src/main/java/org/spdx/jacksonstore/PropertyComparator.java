@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import org.spdx.library.SpdxConstants;
+import org.spdx.library.model.v2.SpdxConstantsCompatV2;
 
 /**
  * Comparator for property names for different SPDX class types
@@ -40,25 +40,25 @@ import org.spdx.library.SpdxConstants;
 public class PropertyComparator implements Comparator<String> {
 	
 	static final List<String> DOCUMENT_PROPERTY_ORDER = Arrays.asList(new String[] {
-			SpdxConstants.PROP_DOCUMENT_NAMESPACE,
-			SpdxConstants.PROP_SPDX_SPEC_VERSION,
-			SpdxConstants.PROP_SPDX_CREATION_INFO,
-			SpdxConstants.PROP_NAME,
-			SpdxConstants.PROP_SPDX_DATA_LICENSE,
-			SpdxConstants.RDFS_PROP_COMMENT,
-			SpdxConstants.PROP_SPDX_EXTERNAL_DOC_REF,
-			SpdxConstants.PROP_DOCUMENT_DESCRIBES,
-			SpdxConstants.PROP_DOCUMENT_PACKAGES,
-			SpdxConstants.PROP_DOCUMENT_FILES,
-			SpdxConstants.PROP_DOCUMENT_SNIPPETS,
-			SpdxConstants.PROP_SPDX_EXTRACTED_LICENSES,
-			SpdxConstants.PROP_ANNOTATION,
-			SpdxConstants.PROP_DOCUMENT_RELATIONSHIPS
+			SpdxConstantsCompatV2.PROP_DOCUMENT_NAMESPACE.getName(),
+			SpdxConstantsCompatV2.PROP_SPDX_SPEC_VERSION.getName(),
+			SpdxConstantsCompatV2.PROP_SPDX_CREATION_INFO.getName(),
+			SpdxConstantsCompatV2.PROP_NAME.getName(),
+			SpdxConstantsCompatV2.PROP_SPDX_DATA_LICENSE.getName(),
+			SpdxConstantsCompatV2.RDFS_PROP_COMMENT.getName(),
+			SpdxConstantsCompatV2.PROP_SPDX_EXTERNAL_DOC_REF.getName(),
+			SpdxConstantsCompatV2.PROP_DOCUMENT_DESCRIBES.getName(),
+			SpdxConstantsCompatV2.PROP_DOCUMENT_PACKAGES.getName(),
+			SpdxConstantsCompatV2.PROP_DOCUMENT_FILES.getName(),
+			SpdxConstantsCompatV2.PROP_DOCUMENT_SNIPPETS.getName(),
+			SpdxConstantsCompatV2.PROP_SPDX_EXTRACTED_LICENSES.getName(),
+			SpdxConstantsCompatV2.PROP_ANNOTATION.getName(),
+			SpdxConstantsCompatV2.PROP_DOCUMENT_RELATIONSHIPS.getName()
 	});
 	static final Map<String, List<String>> propertyOrderMap;
 	static {
 		HashMap<String, List<String>> hm = new HashMap<>();
-		hm.put(SpdxConstants.CLASS_SPDX_DOCUMENT, DOCUMENT_PROPERTY_ORDER);
+		hm.put(SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT, DOCUMENT_PROPERTY_ORDER);
 		propertyOrderMap = Collections.unmodifiableMap(hm);
 	}
 	private List<String> propertyOrder;

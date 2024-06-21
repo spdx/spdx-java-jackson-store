@@ -21,14 +21,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.json.JSONObject;
 import org.json.XML;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.spdx.library.InvalidSPDXAnalysisException;
-import org.spdx.library.SpdxConstants;
+import org.spdx.core.InvalidSPDXAnalysisException;
+import org.spdx.core.TypedValue;
+import org.spdx.library.model.v2.SpdxConstantsCompatV2;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.ISerializableModelStore;
 import org.spdx.storage.simple.ExtendedSpdxStore;
@@ -200,7 +205,7 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 	public static String propertyNameToCollectionPropertyName(String propertyName) {
 		if (propertyName.endsWith("y")) {
 			return propertyName.substring(0, propertyName.length()-1) + "ies";
-		} else if (SpdxConstants.PROP_PACKAGE_LICENSE_INFO_FROM_FILES.equals(propertyName)) {
+		} else if (SpdxConstantsCompatV2.PROP_PACKAGE_LICENSE_INFO_FROM_FILES.getName().equals(propertyName)) {
 			return propertyName;
 		} else {
 			return propertyName + "s";
@@ -210,7 +215,7 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 	public static String collectionPropertyNameToPropertyName(String collectionPropertyName) {
 		if (collectionPropertyName.endsWith("ies")) {
 			return collectionPropertyName.substring(0, collectionPropertyName.length()-3) + "y";
-		} else if (SpdxConstants.PROP_PACKAGE_LICENSE_INFO_FROM_FILES.equals(collectionPropertyName)) {
+		} else if (SpdxConstantsCompatV2.PROP_PACKAGE_LICENSE_INFO_FROM_FILES.getName().equals(collectionPropertyName)) {
 			return collectionPropertyName;
 		} else {
 			return collectionPropertyName.substring(0, collectionPropertyName.length()-1);
@@ -237,7 +242,7 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 		if (Objects.isNull(doc)) {
 			throw new InvalidSPDXAnalysisException("Missing SPDX Document");
 		}
-		JsonNode namespaceNode = doc.get(SpdxConstants.PROP_DOCUMENT_NAMESPACE);
+		JsonNode namespaceNode = doc.get(SpdxConstantsCompatV2.PROP_DOCUMENT_NAMESPACE.getName());
 		if (Objects.isNull(namespaceNode)) {
 			throw new InvalidSPDXAnalysisException("Missing document namespace");
 		}
@@ -246,7 +251,7 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 			throw new InvalidSPDXAnalysisException("Empty document namespace");
 		}
 		if (this.getDocumentUris().contains(documentNamespace)) {
-			IModelStoreLock lock = this.enterCriticalSection(documentNamespace, false);
+			IModelStoreLock lock = this.enterCriticalSection(false);
 			try {
 				if (!overwrite) {
 					throw new InvalidSPDXAnalysisException("Document namespace "+documentNamespace+" already exists.");
@@ -259,6 +264,30 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 		JacksonDeSerializer deSerializer = new JacksonDeSerializer(this, format);
 		deSerializer.storeDocument(documentNamespace, doc);	
 		return documentNamespace;
+	}
 
+	/**
+	 * @param documentNamespace
+	 * @throws InvalidSPDXAnalysisException 
+	 */
+	public void clear(String documentNamespace) throws InvalidSPDXAnalysisException {
+		List<TypedValue> valuesToDelete = this.getAllItems(documentNamespace, null).collect(Collectors.toList());
+		for (TypedValue valueToDelete:valuesToDelete) {
+			this.delete(valueToDelete.getObjectUri());
+		}
+	}
+
+	/**
+	 * @return list of SPDX V2 document URI's in this model store 
+	 * @throws InvalidSPDXAnalysisException 
+	 */
+	public Set<String> getDocumentUris() throws InvalidSPDXAnalysisException {
+		Set<String> retval = new HashSet<>();
+		this.getAllItems(null, null).forEach(tv -> {
+			if (tv.getObjectUri().contains("#")) {
+				retval.add(tv.getObjectUri().substring(0, tv.getObjectUri().indexOf('#')));
+			}
+		});
+		return retval;
 	}
 }
