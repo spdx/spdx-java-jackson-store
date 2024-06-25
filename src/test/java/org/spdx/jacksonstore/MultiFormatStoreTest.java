@@ -35,6 +35,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.spdx.core.DefaultModelStore;
 import org.spdx.core.InvalidSPDXAnalysisException;
@@ -136,7 +137,7 @@ public class MultiFormatStoreTest extends TestCase {
 		}
 		// Deserialize
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		inputStore.serialize(documentUri, outputStream);
+		inputStore.serialize(outputStream);
 		ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
 		MultiFormatStore outputStore = new MultiFormatStore(new InMemSpdxStore(), Format.JSON_PRETTY);
 		outputStore.deSerialize(inputStream, false);
@@ -227,7 +228,7 @@ public class MultiFormatStoreTest extends TestCase {
 		// Deserialize
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		inputStore.setFormat(Format.YAML);
-		inputStore.serialize(documentUri, outputStream);
+		inputStore.serialize(outputStream);
 		ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
 		MultiFormatStore outputStore = new MultiFormatStore(new InMemSpdxStore(), Format.YAML);
 		outputStore.deSerialize(inputStream, false);
@@ -259,7 +260,7 @@ public class MultiFormatStoreTest extends TestCase {
 		// Deserialize
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		inputStore.setFormat(Format.XML);
-		inputStore.serialize(documentUri, outputStream);
+		inputStore.serialize(outputStream);
 		@SuppressWarnings("unused")
 		String temp = new String(outputStream.toByteArray());
 		ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
@@ -387,11 +388,14 @@ public class MultiFormatStoreTest extends TestCase {
     	assertTrue(serFile.createNewFile());
     	try {
     		try (OutputStream stream = new FileOutputStream(serFile)) {
-    			modelStore.serialize(documentUri, stream);
+    			modelStore.serialize(stream);
     		}
     		ISerializableModelStore resultStore = new MultiFormatStore(new InMemSpdxStore(), MultiFormatStore.Format.JSON);
     		try (InputStream inStream = new FileInputStream(serFile)) {
-    			assertEquals(documentUri, resultStore.deSerialize(inStream, false));
+    			resultStore.deSerialize(inStream, false);
+				List<String> restoredDocUris = getDocUris(resultStore);
+				assertEquals(1, restoredDocUris.size());
+				assertEquals(documentUri, restoredDocUris.get(0));
     		}
     		document = SpdxModelFactory.createSpdxDocumentV2(resultStore, documentUri, copyManager);
     		docrels = document.getRelationships();
@@ -484,11 +488,14 @@ public class MultiFormatStoreTest extends TestCase {
     	assertTrue(serFile.createNewFile());
     	try {
     		try (OutputStream stream = new FileOutputStream(serFile)) {
-    			modelStore.serialize(documentUri, stream);
+    			modelStore.serialize(stream);
     		}
     		ISerializableModelStore resultStore = new MultiFormatStore(new InMemSpdxStore(), MultiFormatStore.Format.JSON);
     		try (InputStream inStream = new FileInputStream(serFile)) {
-    			assertEquals(documentUri, resultStore.deSerialize(inStream, false));
+    			resultStore.deSerialize(inStream, false);
+				List<String> restoredDocUris = getDocUris(resultStore);
+				assertEquals(1, restoredDocUris.size());
+				assertEquals(documentUri, restoredDocUris.get(0));
     		}
     		document = SpdxModelFactory.createSpdxDocumentV2(resultStore, documentUri, copyManager);
     		assertEquals(2, document.getDocumentDescribes().size());
@@ -581,11 +588,14 @@ public class MultiFormatStoreTest extends TestCase {
     	assertTrue(serFile.createNewFile());
     	try {
     		try (OutputStream stream = new FileOutputStream(serFile)) {
-    			modelStore.serialize(documentUri, stream);
+    			modelStore.serialize(stream);
     		}
     		ISerializableModelStore resultStore = new MultiFormatStore(new InMemSpdxStore(), MultiFormatStore.Format.JSON);
     		try (InputStream inStream = new FileInputStream(serFile)) {
-    			assertEquals(documentUri, resultStore.deSerialize(inStream, false));
+    			resultStore.deSerialize(inStream, false);
+				List<String> restoredDocUris = getDocUris(resultStore);
+				assertEquals(1, restoredDocUris.size());
+				assertEquals(documentUri, restoredDocUris.get(0));
     		}
     		document = SpdxModelFactory.createSpdxDocumentV2(resultStore, documentUri, copyManager);
     		pkg = (SpdxPackage)document.getDocumentDescribes().toArray(new SpdxElement[1])[0];
@@ -673,11 +683,14 @@ public class MultiFormatStoreTest extends TestCase {
 		assertTrue(serFile.createNewFile());
 		try {
 			try (OutputStream stream = new FileOutputStream(serFile)) {
-				inputStore.serialize(documentUri, stream);
+				inputStore.serialize(stream);
 			}
 			ISerializableModelStore resultStore = new MultiFormatStore(new InMemSpdxStore(), MultiFormatStore.Format.JSON);
 			try (InputStream inStream = new FileInputStream(serFile)) {
-				assertEquals(documentUri, resultStore.deSerialize(inStream, false));
+				resultStore.deSerialize(inStream, false);
+				List<String> restoredDocUris = getDocUris(resultStore);
+				assertEquals(1, restoredDocUris.size());
+				assertEquals(documentUri, restoredDocUris.get(0));
 			}
 			SpdxDocument resultDoc = SpdxModelFactory.createSpdxDocumentV2(resultStore, documentUri, new ModelCopyManager());
 			verify = resultDoc.verify();
@@ -694,5 +707,16 @@ public class MultiFormatStoreTest extends TestCase {
 			}
 			tempDirPath.toFile().delete();
 		}
+	}
+
+	/**
+	 * @param resultStore
+	 * @return
+	 * @throws InvalidSPDXAnalysisException 
+	 */
+	private List<String> getDocUris(ISerializableModelStore resultStore) throws InvalidSPDXAnalysisException {
+		return resultStore.getAllItems(null, SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT)
+			.map(tv -> tv.getObjectUri().substring(0, tv.getObjectUri().indexOf('#')))
+			.collect(Collectors.toList());
 	}
 }

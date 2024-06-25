@@ -544,7 +544,7 @@ public class JacksonDeSerializer {
 			if (AnyLicenseInfo.class.isAssignableFrom(clazz)) {
 				// convert license expressions to their model object form
 				AnyLicenseInfo parsedLicense = LicenseInfoFactory.parseSPDXLicenseStringCompatV2(value.asText(), store, documentUri, null);
-				return ModelObjectHelper.modelObjectToStoredObject(parsedLicense, store, null);			
+				return ModelObjectHelper.modelObjectToStoredObject(parsedLicense, store, null, null);			
 			} else if (SpdxDocument.class.isAssignableFrom(clazz)) {
 				// Convert any IndividualUriValue values
 				final String uriValue = value.asText();

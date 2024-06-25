@@ -238,6 +238,19 @@ public class JacksonSerializer {
 		this.format = format;
 		this.verbose = verbose;
 	}
+	
+	/**
+	 * @param documentUris list of document uris
+	 * @return JSON array of all documents which have the document Uris
+	 * @throws InvalidSPDXAnalysisException
+	 */
+	public ArrayNode docsToJsonNode(List<String> documentUris) throws InvalidSPDXAnalysisException {
+		ArrayNode retval = mapper.createArrayNode();
+		for (String documentUri:documentUris) {
+			retval.add(docToJsonNode(documentUri));
+		}
+		return retval;
+	}
 
 	/**
 	 * @param documentUri URI for the document to be converted
