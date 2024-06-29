@@ -43,7 +43,7 @@ import org.spdx.library.model.v2.ExternalDocumentRef;
 import org.spdx.library.model.v2.ExternalSpdxElement;
 import org.spdx.library.model.v2.SpdxConstantsCompatV2;
 import org.spdx.library.model.v2.SpdxElement;
-import org.spdx.library.model.v2.SpdxModelFactory;
+import org.spdx.library.model.v2.SpdxModelFactoryCompatV2;
 import org.spdx.library.model.v2.enumerations.Purpose;
 import org.spdx.library.model.v2.enumerations.RelationshipType;
 import org.spdx.library.model.v2.enumerations.SpdxEnumFactoryCompatV2;
@@ -347,7 +347,7 @@ public class JacksonSerializer {
 		Set<String> documentDescribesIds = new HashSet<>(); // keep track of any documentDescribes properties added to avoid duplicates
 		List<String> docPropNames = new ArrayList<String>(store.getPropertyValueNames(storedItem.getObjectUri()));
 		docPropNames.sort(new PropertyComparator(storedItem.getType()));
-		Class<?> clazz = SpdxModelFactory.SPDX_TYPE_TO_CLASS_V2.get(storedItem.getType());
+		Class<?> clazz = SpdxModelFactoryCompatV2.SPDX_TYPE_TO_CLASS_V2.get(storedItem.getType());
 		IdType idType = store.getIdType(storedItem.getObjectUri());
 		String id = CompatibleModelStoreWrapper.objectUriToId(store, storedItem.getObjectUri(), documentUri);
 		if (SpdxElement.class.isAssignableFrom(clazz)) {
@@ -598,11 +598,11 @@ public class JacksonSerializer {
 		} else if (value instanceof TypedValue) {
 			TypedValue tvStoredValue = (TypedValue)value;
 			String tvId = CompatibleModelStoreWrapper.objectUriToId(store, tvStoredValue.getObjectUri(), documentUri);
-			Class<?> clazz = SpdxModelFactory.SPDX_TYPE_TO_CLASS_V2.get(tvStoredValue.getType());
+			Class<?> clazz = SpdxModelFactoryCompatV2.SPDX_TYPE_TO_CLASS_V2.get(tvStoredValue.getType());
 			if (AnyLicenseInfo.class.isAssignableFrom(clazz) && 
 					(Verbose.STANDARD.equals(verbose) || Verbose.COMPACT.equals(verbose))) {
 				CoreModelObject inflated = ModelRegistry.getModelRegistry().inflateModelObject(store, tvStoredValue.getObjectUri(), tvStoredValue.getType(), 
-						null, tvStoredValue.getSpecVersion(), false);
+						null, tvStoredValue.getSpecVersion(), false, documentUri + "#");
 				return inflated.toString();
 			} else if (SpdxElement.class.isAssignableFrom(clazz) &&
 					Verbose.COMPACT.equals(verbose) &&

@@ -50,7 +50,7 @@ import org.spdx.library.model.v2.SpdxConstantsCompatV2;
 import org.spdx.library.model.v2.SpdxDocument;
 import org.spdx.library.model.v2.SpdxElement;
 import org.spdx.library.model.v2.SpdxFile;
-import org.spdx.library.model.v2.SpdxModelFactory;
+import org.spdx.library.model.v2.SpdxModelFactoryCompatV2;
 import org.spdx.library.model.v2.SpdxModelInfoV2_X;
 import org.spdx.library.model.v2.SpdxPackage;
 import org.spdx.library.model.v2.Version;
@@ -360,7 +360,7 @@ public class MultiFormatStoreTest extends TestCase {
 		String documentUri = "https://someuri";
         ModelCopyManager copyManager = new ModelCopyManager();
         ISerializableModelStore modelStore = new MultiFormatStore(new InMemSpdxStore(), MultiFormatStore.Format.JSON_PRETTY);
-        SpdxDocument document = SpdxModelFactory.createSpdxDocumentV2(modelStore, documentUri, copyManager);
+        SpdxDocument document = SpdxModelFactoryCompatV2.createSpdxDocumentV2(modelStore, documentUri, copyManager);
         document.setSpecVersion(Version.TWO_POINT_THREE_VERSION);
         document.setName("SPDX-tool-test");
         Checksum sha1Checksum = Checksum.create(modelStore, documentUri, ChecksumAlgorithm.SHA1, "d6a770ba38583ed4bb4525bd96e50461655d2758");
@@ -397,7 +397,7 @@ public class MultiFormatStoreTest extends TestCase {
 				assertEquals(1, restoredDocUris.size());
 				assertEquals(documentUri, restoredDocUris.get(0));
     		}
-    		document = SpdxModelFactory.createSpdxDocumentV2(resultStore, documentUri, copyManager);
+    		document = SpdxModelFactoryCompatV2.createSpdxDocumentV2(resultStore, documentUri, copyManager);
     		docrels = document.getRelationships();
             assertEquals(1, docrels.size());
             for (Relationship rel:docrels) {
@@ -450,7 +450,7 @@ public class MultiFormatStoreTest extends TestCase {
 		String documentUri = "https://someuri";
         ModelCopyManager copyManager = new ModelCopyManager();
         ISerializableModelStore modelStore = new MultiFormatStore(new InMemSpdxStore(), MultiFormatStore.Format.JSON_PRETTY);
-        SpdxDocument document = SpdxModelFactory.createSpdxDocumentV2(modelStore, documentUri, copyManager);
+        SpdxDocument document = SpdxModelFactoryCompatV2.createSpdxDocumentV2(modelStore, documentUri, copyManager);
         document.setSpecVersion(Version.TWO_POINT_THREE_VERSION);
         document.setName("SPDX-tool-test");
         Checksum sha1Checksum = Checksum.create(modelStore, documentUri, ChecksumAlgorithm.SHA1, "d6a770ba38583ed4bb4525bd96e50461655d2758");
@@ -497,7 +497,7 @@ public class MultiFormatStoreTest extends TestCase {
 				assertEquals(1, restoredDocUris.size());
 				assertEquals(documentUri, restoredDocUris.get(0));
     		}
-    		document = SpdxModelFactory.createSpdxDocumentV2(resultStore, documentUri, copyManager);
+    		document = SpdxModelFactoryCompatV2.createSpdxDocumentV2(resultStore, documentUri, copyManager);
     		assertEquals(2, document.getDocumentDescribes().size());
             assertTrue(document.getDocumentDescribes().contains(fileA));
             assertTrue(document.getDocumentDescribes().contains(fileB));
@@ -544,7 +544,7 @@ public class MultiFormatStoreTest extends TestCase {
 		String documentUri = "https://someuri";
         ModelCopyManager copyManager = new ModelCopyManager();
         ISerializableModelStore modelStore = new MultiFormatStore(new InMemSpdxStore(), MultiFormatStore.Format.JSON_PRETTY);
-        SpdxDocument document = SpdxModelFactory.createSpdxDocumentV2(modelStore, documentUri, copyManager);
+        SpdxDocument document = SpdxModelFactoryCompatV2.createSpdxDocumentV2(modelStore, documentUri, copyManager);
         document.setSpecVersion(Version.TWO_POINT_THREE_VERSION);
         document.setName("SPDX-tool-test");
         Checksum sha1Checksum = Checksum.create(modelStore, documentUri, ChecksumAlgorithm.SHA1, "d6a770ba38583ed4bb4525bd96e50461655d2758");
@@ -597,7 +597,7 @@ public class MultiFormatStoreTest extends TestCase {
 				assertEquals(1, restoredDocUris.size());
 				assertEquals(documentUri, restoredDocUris.get(0));
     		}
-    		document = SpdxModelFactory.createSpdxDocumentV2(resultStore, documentUri, copyManager);
+    		document = SpdxModelFactoryCompatV2.createSpdxDocumentV2(resultStore, documentUri, copyManager);
     		pkg = (SpdxPackage)document.getDocumentDescribes().toArray(new SpdxElement[1])[0];
     		
     		assertEquals(2, pkg.getFiles().size());
@@ -692,7 +692,7 @@ public class MultiFormatStoreTest extends TestCase {
 				assertEquals(1, restoredDocUris.size());
 				assertEquals(documentUri, restoredDocUris.get(0));
 			}
-			SpdxDocument resultDoc = SpdxModelFactory.createSpdxDocumentV2(resultStore, documentUri, new ModelCopyManager());
+			SpdxDocument resultDoc = SpdxModelFactoryCompatV2.createSpdxDocumentV2(resultStore, documentUri, new ModelCopyManager());
 			verify = resultDoc.verify();
 			assertEquals(0, verify.size());
 			// validate schema file

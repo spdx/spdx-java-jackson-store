@@ -43,7 +43,7 @@ import org.spdx.library.model.v2.ReferenceType;
 import org.spdx.library.model.v2.SpdxConstantsCompatV2;
 import org.spdx.library.model.v2.SpdxDocument;
 import org.spdx.library.model.v2.SpdxElement;
-import org.spdx.library.model.v2.SpdxModelFactory;
+import org.spdx.library.model.v2.SpdxModelFactoryCompatV2;
 import org.spdx.library.model.v2.enumerations.RelationshipType;
 import org.spdx.library.model.v2.license.AnyLicenseInfo;
 import org.spdx.library.referencetype.ListedReferenceTypes;
@@ -530,7 +530,7 @@ public class JacksonDeSerializer {
 		Class<?> clazz = null;
 		if (propertyType.isPresent()) {
 			// check for SPDX model types
-			clazz = SpdxModelFactory.SPDX_TYPE_TO_CLASS_V2.get(propertyType.get());
+			clazz = SpdxModelFactoryCompatV2.SPDX_TYPE_TO_CLASS_V2.get(propertyType.get());
 			if (Objects.isNull(clazz)) {
 				// check for primitive types
 				clazz = SpdxJsonLDContext.XMLSCHEMA_TYPE_TO_JAVA_CLASS.get(propertyType.get());
