@@ -63,7 +63,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 /**
  * Serializer for a model store to convert the document model object into a JsonNode
  * 
- * the method <code>docToJsonNode(String documentUri)</code> will generate the JSON node
+ * the method <code>docToJsonNode(String documentUri)</code> will generate the JSON node for a document
  * @author Gary O'Neall
  *
  */
@@ -229,10 +229,10 @@ public class JacksonSerializer {
 	 * @param store Model store containing the documents
 	 */
 	public JacksonSerializer(ObjectMapper mapper, Format format, Verbose verbose, IModelStore store) {
-		Objects.requireNonNull(mapper, "Null required Jackson mapper");
-		Objects.requireNonNull(format, "Null required format");
-		Objects.requireNonNull(verbose, "Null required verbose");
-		Objects.requireNonNull(store, "Null required store");
+		Objects.requireNonNull(mapper, "Non-null required Jackson mapper");
+		Objects.requireNonNull(format, "Non-null required format");
+		Objects.requireNonNull(verbose, "Non-null required verbose");
+		Objects.requireNonNull(store, "Non-null required store");
 		this.mapper = mapper;
 		this.store = new CompatibleModelStoreWrapper(store);
 		this.format = format;
