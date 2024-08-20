@@ -28,13 +28,19 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nullable;
+
 import org.json.JSONObject;
 import org.json.XML;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.spdx.core.CoreModelObject;
 import org.spdx.core.InvalidSPDXAnalysisException;
 import org.spdx.core.TypedValue;
+import org.spdx.library.ModelCopyManager;
+import org.spdx.library.SpdxModelFactory;
 import org.spdx.library.model.v2.SpdxConstantsCompatV2;
+import org.spdx.library.model.v2.SpdxDocument;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.ISerializableModelStore;
 import org.spdx.storage.simple.ExtendedSpdxStore;
@@ -161,20 +167,27 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 		setMapper();
 	}
 
-
+	@Override
+	public synchronized void serialize(OutputStream stream) throws InvalidSPDXAnalysisException, IOException {
+		serialize(stream, null);
+	}
 
 	/* (non-Javadoc)
 	 * @see org.spdx.storage.ISerializableModelStore#serialize(java.lang.String, java.io.OutputStream)
 	 */
 	@Override
-	public synchronized void serialize(OutputStream stream) throws InvalidSPDXAnalysisException, IOException {
+	public synchronized void serialize(OutputStream stream, @Nullable CoreModelObject modelObject) throws InvalidSPDXAnalysisException, IOException {
 		JacksonSerializer serializer = new JacksonSerializer(outputMapper, format, verbose, this);
-		
-		List<String> allDocuments = getAllItems(null, SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT)
-			.map(tv -> tv.getObjectUri().substring(0, tv.getObjectUri().indexOf('#')))
-			.collect(Collectors.toList());
-		JsonNode output = allDocuments.size() == 1 ? serializer.docToJsonNode(allDocuments.get(0)) :
-			serializer.docsToJsonNode(allDocuments);
+		JsonNode output;
+		if (Objects.nonNull(modelObject)) {
+			output = serializer.docToJsonNode(modelObject.getObjectUri().substring(0, modelObject.getObjectUri().indexOf('#')));
+		} else {
+			List<String> allDocuments = getAllItems(null, SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT)
+					.map(tv -> tv.getObjectUri().substring(0, tv.getObjectUri().indexOf('#')))
+					.collect(Collectors.toList());
+			output = allDocuments.size() == 1 ? serializer.docToJsonNode(allDocuments.get(0)) :
+					serializer.docsToJsonNode(allDocuments);
+		}
 		JsonGenerator jgen = null;
 		try {
     		switch (format) {
@@ -232,7 +245,7 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 	 * @see org.spdx.storage.ISerializableModelStore#deSerialize(java.io.InputStream, boolean)
 	 */
 	@Override
-	public synchronized void deSerialize(InputStream stream, boolean overwrite) throws InvalidSPDXAnalysisException, IOException {
+	public synchronized SpdxDocument deSerialize(InputStream stream, boolean overwrite) throws InvalidSPDXAnalysisException, IOException {
 		Objects.requireNonNull(stream, "Input stream must not be null");
 		if (this.verbose != Verbose.COMPACT) {
 			throw new InvalidSPDXAnalysisException("Only COMPACT verbose option is supported for deserialization");
@@ -281,13 +294,19 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 			}
 		}
 		JacksonDeSerializer deSerializer = new JacksonDeSerializer(this, format);
+		String docNamespace;
 		if (root instanceof ArrayNode) {
 			for (JsonNode doc:(ArrayNode)root) {
 				deSerializer.storeDocument(getNamespaceFromDoc(doc), doc);
 			}
+			docNamespace = getNamespaceFromDoc((ArrayNode)root.get(0));
 		} else {
 			deSerializer.storeDocument(getNamespaceFromDoc(root), root);
+			docNamespace = getNamespaceFromDoc(root);
 		}
+		return (SpdxDocument)SpdxModelFactory.inflateModelObject(this, docNamespace + "#" + SpdxConstantsCompatV2.SPDX_DOCUMENT_ID,  
+				SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT, new ModelCopyManager(), 
+				SpdxConstantsCompatV2.SPEC_TWO_POINT_THREE_VERSION, false, docNamespace);
 	}
 
 	/**

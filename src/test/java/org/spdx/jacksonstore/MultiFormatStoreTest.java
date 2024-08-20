@@ -119,11 +119,12 @@ public class MultiFormatStoreTest extends TestCase {
 	public void testDeSerializeSerializeJson() throws InvalidSPDXAnalysisException, IOException, SpdxCompareException {
 		File jsonFile = new File(JSON_FILE_PATH);
 		MultiFormatStore inputStore = new MultiFormatStore(new InMemSpdxStore(), Format.JSON_PRETTY);
+		SpdxDocument inputDocument;
 		try (InputStream input = new FileInputStream(jsonFile)) {
-			inputStore.deSerialize(input, false);
+			inputDocument = inputStore.deSerialize(input, false);
 		}
 		String documentUri = inputStore.getDocumentUris().toArray(new String[inputStore.getDocumentUris().size()])[0];
-		SpdxDocument inputDocument = new SpdxDocument(inputStore, documentUri, null, false);
+		assertEquals(documentUri, inputDocument.getDocumentUri());
 		List<String> verify = inputDocument.verify();
 		assertEquals(0, verify.size());
 		// test Overwrite
