@@ -59,7 +59,7 @@ import org.spdx.library.model.v2.enumerations.Purpose;
 import org.spdx.library.model.v2.enumerations.RelationshipType;
 import org.spdx.library.model.v2.license.AnyLicenseInfo;
 import org.spdx.library.model.v2.license.SpdxNoAssertionLicense;
-import org.spdx.library.model.v3_0_0.SpdxModelInfoV3_0;
+import org.spdx.library.model.v3_0_1.SpdxModelInfoV3_0;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.ISerializableModelStore;
 import org.spdx.storage.simple.InMemSpdxStore;
