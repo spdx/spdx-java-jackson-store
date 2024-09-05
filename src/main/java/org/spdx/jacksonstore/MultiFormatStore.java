@@ -21,14 +21,26 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
 
 import org.json.JSONObject;
 import org.json.XML;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.spdx.library.InvalidSPDXAnalysisException;
-import org.spdx.library.SpdxConstants;
+import org.spdx.core.CoreModelObject;
+import org.spdx.core.InvalidSPDXAnalysisException;
+import org.spdx.core.TypedValue;
+import org.spdx.library.ModelCopyManager;
+import org.spdx.library.SpdxModelFactory;
+import org.spdx.library.model.v2.SpdxConstantsCompatV2;
+import org.spdx.library.model.v2.SpdxDocument;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.ISerializableModelStore;
 import org.spdx.storage.simple.ExtendedSpdxStore;
@@ -37,7 +49,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.dataformat.xml.XmlFactory;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
@@ -155,15 +167,27 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 		setMapper();
 	}
 
-
+	@Override
+	public synchronized void serialize(OutputStream stream) throws InvalidSPDXAnalysisException, IOException {
+		serialize(stream, null);
+	}
 
 	/* (non-Javadoc)
 	 * @see org.spdx.storage.ISerializableModelStore#serialize(java.lang.String, java.io.OutputStream)
 	 */
 	@Override
-	public synchronized void serialize(String documentUri, OutputStream stream) throws InvalidSPDXAnalysisException, IOException {
+	public synchronized void serialize(OutputStream stream, @Nullable CoreModelObject modelObject) throws InvalidSPDXAnalysisException, IOException {
 		JacksonSerializer serializer = new JacksonSerializer(outputMapper, format, verbose, this);
-		ObjectNode output = serializer.docToJsonNode(documentUri);
+		JsonNode output;
+		if (Objects.nonNull(modelObject)) {
+			output = serializer.docToJsonNode(modelObject.getObjectUri().substring(0, modelObject.getObjectUri().indexOf('#')));
+		} else {
+			List<String> allDocuments = getAllItems(null, SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT)
+					.map(tv -> tv.getObjectUri().substring(0, tv.getObjectUri().indexOf('#')))
+					.collect(Collectors.toList());
+			output = allDocuments.size() == 1 ? serializer.docToJsonNode(allDocuments.get(0)) :
+					serializer.docsToJsonNode(allDocuments);
+		}
 		JsonGenerator jgen = null;
 		try {
     		switch (format) {
@@ -200,7 +224,7 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 	public static String propertyNameToCollectionPropertyName(String propertyName) {
 		if (propertyName.endsWith("y")) {
 			return propertyName.substring(0, propertyName.length()-1) + "ies";
-		} else if (SpdxConstants.PROP_PACKAGE_LICENSE_INFO_FROM_FILES.equals(propertyName)) {
+		} else if (SpdxConstantsCompatV2.PROP_PACKAGE_LICENSE_INFO_FROM_FILES.getName().equals(propertyName)) {
 			return propertyName;
 		} else {
 			return propertyName + "s";
@@ -210,7 +234,7 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 	public static String collectionPropertyNameToPropertyName(String collectionPropertyName) {
 		if (collectionPropertyName.endsWith("ies")) {
 			return collectionPropertyName.substring(0, collectionPropertyName.length()-3) + "y";
-		} else if (SpdxConstants.PROP_PACKAGE_LICENSE_INFO_FROM_FILES.equals(collectionPropertyName)) {
+		} else if (SpdxConstantsCompatV2.PROP_PACKAGE_LICENSE_INFO_FROM_FILES.getName().equals(collectionPropertyName)) {
 			return collectionPropertyName;
 		} else {
 			return collectionPropertyName.substring(0, collectionPropertyName.length()-1);
@@ -221,23 +245,77 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 	 * @see org.spdx.storage.ISerializableModelStore#deSerialize(java.io.InputStream, boolean)
 	 */
 	@Override
-	public synchronized String deSerialize(InputStream stream, boolean overwrite) throws InvalidSPDXAnalysisException, IOException {
+	public synchronized SpdxDocument deSerialize(InputStream stream, boolean overwrite) throws InvalidSPDXAnalysisException, IOException {
 		Objects.requireNonNull(stream, "Input stream must not be null");
 		if (this.verbose != Verbose.COMPACT) {
 			throw new InvalidSPDXAnalysisException("Only COMPACT verbose option is supported for deserialization");
 		}
-		JsonNode doc;
+		JsonNode root;
 		if (Format.XML.equals(format)) {
 			// Jackson XML mapper does not support deserializing collections or arrays.  Use Json-In-Java to convert to JSON
 			JSONObject jo = XML.toJSONObject(new InputStreamReader(stream, "UTF-8"));
-			doc = inputMapper.readTree(jo.toString()).get("Document");
+			root = inputMapper.readTree(jo.toString()).get("Document");
 		} else {
-			doc  = inputMapper.readTree(stream);
+			root  = inputMapper.readTree(stream);
 		}
-		if (Objects.isNull(doc)) {
+		if (Objects.isNull(root)) {
 			throw new InvalidSPDXAnalysisException("Missing SPDX Document");
 		}
-		JsonNode namespaceNode = doc.get(SpdxConstants.PROP_DOCUMENT_NAMESPACE);
+		List<String> documentNamespaces = new ArrayList<>();
+		if (root instanceof ArrayNode) {
+			for (JsonNode docNode:(ArrayNode)root) {
+				documentNamespaces.add(getNamespaceFromDoc(docNode));
+			}
+		} else {
+			documentNamespaces.add(getNamespaceFromDoc(root));
+		}
+		
+		Set<String> existingDocNamespaces = this.getDocumentUris();
+		boolean existing = false;
+		for (String docNamespace:documentNamespaces) {
+			if (existingDocNamespaces.contains(docNamespace)) {
+				existing = true;
+				break;
+			}
+		}
+		if (existing) {
+			IModelStoreLock lock = this.enterCriticalSection(false);
+			try {
+				if (!overwrite) {
+					throw new InvalidSPDXAnalysisException("Document namespace(s) already exists.");
+				}
+				for (String docNamespace:documentNamespaces) {
+					if (existingDocNamespaces.contains(docNamespace)) {
+						this.clear(docNamespace);
+					}
+				}
+			} finally {
+				this.leaveCriticalSection(lock);
+			}
+		}
+		JacksonDeSerializer deSerializer = new JacksonDeSerializer(this, format);
+		String docNamespace;
+		if (root instanceof ArrayNode) {
+			for (JsonNode doc:(ArrayNode)root) {
+				deSerializer.storeDocument(getNamespaceFromDoc(doc), doc);
+			}
+			docNamespace = getNamespaceFromDoc((ArrayNode)root.get(0));
+		} else {
+			deSerializer.storeDocument(getNamespaceFromDoc(root), root);
+			docNamespace = getNamespaceFromDoc(root);
+		}
+		return (SpdxDocument)SpdxModelFactory.inflateModelObject(this, docNamespace + "#" + SpdxConstantsCompatV2.SPDX_DOCUMENT_ID,  
+				SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT, new ModelCopyManager(), 
+				SpdxConstantsCompatV2.SPEC_TWO_POINT_THREE_VERSION, false, docNamespace);
+	}
+
+	/**
+	 * Get the document namespace from the JSON node representing the SPDX document
+	 * @param docNode root of the SPDX document
+	 * @throws InvalidSPDXAnalysisException on missing document namespace
+	 */
+	private String getNamespaceFromDoc(JsonNode docNode) throws InvalidSPDXAnalysisException {
+		JsonNode namespaceNode = docNode.get(SpdxConstantsCompatV2.PROP_DOCUMENT_NAMESPACE.getName());
 		if (Objects.isNull(namespaceNode)) {
 			throw new InvalidSPDXAnalysisException("Missing document namespace");
 		}
@@ -245,20 +323,31 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 		if (Objects.isNull(documentNamespace) || documentNamespace.isEmpty()) {
 			throw new InvalidSPDXAnalysisException("Empty document namespace");
 		}
-		if (this.getDocumentUris().contains(documentNamespace)) {
-			IModelStoreLock lock = this.enterCriticalSection(documentNamespace, false);
-			try {
-				if (!overwrite) {
-					throw new InvalidSPDXAnalysisException("Document namespace "+documentNamespace+" already exists.");
-				}
-				this.clear(documentNamespace);
-			} finally {
-				this.leaveCriticalSection(lock);
-			}
-		}
-		JacksonDeSerializer deSerializer = new JacksonDeSerializer(this, format);
-		deSerializer.storeDocument(documentNamespace, doc);	
 		return documentNamespace;
+	}
 
+	/**
+	 * @param documentNamespace
+	 * @throws InvalidSPDXAnalysisException 
+	 */
+	public void clear(String documentNamespace) throws InvalidSPDXAnalysisException {
+		List<TypedValue> valuesToDelete = this.getAllItems(documentNamespace, null).collect(Collectors.toList());
+		for (TypedValue valueToDelete:valuesToDelete) {
+			this.delete(valueToDelete.getObjectUri());
+		}
+	}
+
+	/**
+	 * @return list of SPDX V2 document URI's in this model store 
+	 * @throws InvalidSPDXAnalysisException 
+	 */
+	public Set<String> getDocumentUris() throws InvalidSPDXAnalysisException {
+		Set<String> retval = new HashSet<>();
+		this.getAllItems(null, null).forEach(tv -> {
+			if (tv.getObjectUri().contains("#")) {
+				retval.add(tv.getObjectUri().substring(0, tv.getObjectUri().indexOf('#')));
+			}
+		});
+		return retval;
 	}
 }

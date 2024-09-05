@@ -31,25 +31,28 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.spdx.core.CoreModelObject;
+import org.spdx.core.IndividualUriValue;
+import org.spdx.core.InvalidSPDXAnalysisException;
+import org.spdx.core.ModelRegistry;
+import org.spdx.core.SpdxInvalidTypeException;
+import org.spdx.core.TypedValue;
 import org.spdx.jacksonstore.MultiFormatStore.Format;
 import org.spdx.jacksonstore.MultiFormatStore.Verbose;
-import org.spdx.library.InvalidSPDXAnalysisException;
-import org.spdx.library.SpdxConstants;
-import org.spdx.library.model.ExternalDocumentRef;
-import org.spdx.library.model.ExternalSpdxElement;
-import org.spdx.library.model.IndividualUriValue;
-import org.spdx.library.model.SpdxElement;
-import org.spdx.library.model.SpdxInvalidTypeException;
-import org.spdx.library.model.SpdxModelFactory;
-import org.spdx.library.model.TypedValue;
-import org.spdx.library.model.enumerations.Purpose;
-import org.spdx.library.model.enumerations.RelationshipType;
-import org.spdx.library.model.enumerations.SpdxEnumFactory;
-import org.spdx.library.model.license.AnyLicenseInfo;
-import org.spdx.library.model.license.SimpleLicensingInfo;
+import org.spdx.library.model.v2.ExternalDocumentRef;
+import org.spdx.library.model.v2.ExternalSpdxElement;
+import org.spdx.library.model.v2.SpdxConstantsCompatV2;
+import org.spdx.library.model.v2.SpdxElement;
+import org.spdx.library.model.v2.SpdxModelFactoryCompatV2;
+import org.spdx.library.model.v2.enumerations.Purpose;
+import org.spdx.library.model.v2.enumerations.RelationshipType;
+import org.spdx.library.model.v2.enumerations.SpdxEnumFactoryCompatV2;
+import org.spdx.library.model.v2.license.AnyLicenseInfo;
+import org.spdx.library.model.v2.license.SimpleLicensingInfo;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.IModelStore.IModelStoreLock;
 import org.spdx.storage.IModelStore.IdType;
+import org.spdx.storage.compatv2.CompatibleModelStoreWrapper;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -60,7 +63,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 /**
  * Serializer for a model store to convert the document model object into a JsonNode
  * 
- * the method <code>docToJsonNode(String documentUri)</code> will generate the JSON node
+ * the method <code>docToJsonNode(String documentUri)</code> will generate the JSON node for a document
  * @author Gary O'Neall
  *
  */
@@ -131,25 +134,25 @@ public class JacksonSerializer {
 			if (!arg1.isObject()) {
 				return 1;
 			}
-			JsonNode spdxid0 = arg0.get(SpdxConstants.SPDX_IDENTIFIER);
+			JsonNode spdxid0 = arg0.get(SpdxConstantsCompatV2.SPDX_IDENTIFIER);
 			if (Objects.nonNull(spdxid0) && spdxid0.isTextual()) {
-				JsonNode spdxid1 = arg1.get(SpdxConstants.SPDX_IDENTIFIER);
+				JsonNode spdxid1 = arg1.get(SpdxConstantsCompatV2.SPDX_IDENTIFIER);
 				return Objects.nonNull(spdxid1) && spdxid1.isTextual() ? spdxid0.asText().compareTo(spdxid1.asText()) : 1;
 			}
 			// look for special cases where we don't want to sort in the order of properties
-			JsonNode licenseId0 = arg0.get(SpdxConstants.PROP_LICENSE_ID);
+			JsonNode licenseId0 = arg0.get(SpdxConstantsCompatV2.PROP_LICENSE_ID.getName());
 			if (Objects.nonNull(licenseId0) && licenseId0.isTextual()) {
 				return compareExtractedLicense(licenseId0.asText(), arg1);
 			}
-			JsonNode spdxDocument0 = arg0.get(SpdxConstants.PROP_EXTERNAL_SPDX_DOCUMENT);
-			JsonNode externalDocId0 = arg0.get(SpdxConstants.PROP_EXTERNAL_DOCUMENT_ID);
+			JsonNode spdxDocument0 = arg0.get(SpdxConstantsCompatV2.PROP_EXTERNAL_SPDX_DOCUMENT.getName());
+			JsonNode externalDocId0 = arg0.get(SpdxConstantsCompatV2.PROP_EXTERNAL_DOCUMENT_ID.getName());
 			if (Objects.nonNull(spdxDocument0) && Objects.nonNull(externalDocId0) &&
 					spdxDocument0.isTextual() && externalDocId0.isTextual()) {
 				return compareExternalDocumentRef(spdxDocument0.asText(), externalDocId0.asText(), arg1);
 			}
-			JsonNode refCategory0 = arg0.get(SpdxConstants.PROP_REFERENCE_CATEGORY);
-			JsonNode refType0 = arg0.get(SpdxConstants.PROP_REFERENCE_TYPE);
-			JsonNode refLocator0 = arg0.get(SpdxConstants.PROP_REFERENCE_LOCATOR);
+			JsonNode refCategory0 = arg0.get(SpdxConstantsCompatV2.PROP_REFERENCE_CATEGORY.getName());
+			JsonNode refType0 = arg0.get(SpdxConstantsCompatV2.PROP_REFERENCE_TYPE.getName());
+			JsonNode refLocator0 = arg0.get(SpdxConstantsCompatV2.PROP_REFERENCE_LOCATOR.getName());
 			if (Objects.nonNull(refCategory0) && Objects.nonNull(refType0) && Objects.nonNull(refLocator0) &&
 				refCategory0.isTextual() && refType0.isTextual() && refLocator0.isTextual()) {
 					return compareExternalRef(refCategory0.asText(), refType0.asText(), refLocator0.asText(), arg1);
@@ -171,9 +174,9 @@ public class JacksonSerializer {
 
 		private int compareExternalRef(String refCategory, String refType,
 				String refLocator, JsonNode compare) {
-			JsonNode compRefCategory = compare.get(SpdxConstants.PROP_REFERENCE_CATEGORY);
-			JsonNode compRefType = compare.get(SpdxConstants.PROP_REFERENCE_TYPE);
-			JsonNode compRefLocator = compare.get(SpdxConstants.PROP_REFERENCE_LOCATOR);
+			JsonNode compRefCategory = compare.get(SpdxConstantsCompatV2.PROP_REFERENCE_CATEGORY.getName());
+			JsonNode compRefType = compare.get(SpdxConstantsCompatV2.PROP_REFERENCE_TYPE.getName());
+			JsonNode compRefLocator = compare.get(SpdxConstantsCompatV2.PROP_REFERENCE_LOCATOR.getName());
 			if (Objects.isNull(compRefCategory) || Objects.isNull(compRefType) || Objects.isNull(compRefLocator) ||
 					!compRefCategory.isTextual() || !compRefType.isTextual() || !compRefLocator.isTextual()) {
 				return 1;
@@ -191,8 +194,8 @@ public class JacksonSerializer {
 
 		private int compareExternalDocumentRef(String document, String externalDocId,
 				JsonNode compare) {
-			JsonNode compDocument = compare.get(SpdxConstants.PROP_EXTERNAL_SPDX_DOCUMENT);
-			JsonNode compExternalDocId = compare.get(SpdxConstants.PROP_EXTERNAL_DOCUMENT_ID);
+			JsonNode compDocument = compare.get(SpdxConstantsCompatV2.PROP_EXTERNAL_SPDX_DOCUMENT.getName());
+			JsonNode compExternalDocId = compare.get(SpdxConstantsCompatV2.PROP_EXTERNAL_DOCUMENT_ID.getName());
 			if (Objects.isNull(compDocument) || Objects.isNull(compExternalDocId) ||
 					!compDocument.isTextual() || !compExternalDocId.isTextual()) {
 				return 1;
@@ -205,7 +208,7 @@ public class JacksonSerializer {
 		}
 
 		private int compareExtractedLicense(String licenseId, JsonNode compare) {
-			JsonNode compLicenseId = compare.get(SpdxConstants.PROP_LICENSE_ID);
+			JsonNode compLicenseId = compare.get(SpdxConstantsCompatV2.PROP_LICENSE_ID.getName());
 			if (Objects.isNull(compLicenseId) || !compLicenseId.isTextual()) {
 				return 1;
 			} else {
@@ -216,7 +219,7 @@ public class JacksonSerializer {
 	};
 
 	private ObjectMapper mapper;
-	private IModelStore store;
+	private CompatibleModelStoreWrapper store;
 	private Format format;
 	private Verbose verbose;
 
@@ -226,14 +229,27 @@ public class JacksonSerializer {
 	 * @param store Model store containing the documents
 	 */
 	public JacksonSerializer(ObjectMapper mapper, Format format, Verbose verbose, IModelStore store) {
-		Objects.requireNonNull(mapper, "Null required Jackson mapper");
-		Objects.requireNonNull(format, "Null required format");
-		Objects.requireNonNull(verbose, "Null required verbose");
-		Objects.requireNonNull(store, "Null required store");
+		Objects.requireNonNull(mapper, "Non-null required Jackson mapper");
+		Objects.requireNonNull(format, "Non-null required format");
+		Objects.requireNonNull(verbose, "Non-null required verbose");
+		Objects.requireNonNull(store, "Non-null required store");
 		this.mapper = mapper;
-		this.store = store;
+		this.store = new CompatibleModelStoreWrapper(store);
 		this.format = format;
 		this.verbose = verbose;
+	}
+	
+	/**
+	 * @param documentUris list of document uris
+	 * @return JSON array of all documents which have the document Uris
+	 * @throws InvalidSPDXAnalysisException
+	 */
+	public ArrayNode docsToJsonNode(List<String> documentUris) throws InvalidSPDXAnalysisException {
+		ArrayNode retval = mapper.createArrayNode();
+		for (String documentUri:documentUris) {
+			retval.add(docToJsonNode(documentUri));
+		}
+		return retval;
 	}
 
 	/**
@@ -245,21 +261,22 @@ public class JacksonSerializer {
 		Objects.requireNonNull(documentUri,"Null Document URI");
 		IModelStoreLock lock = store.enterCriticalSection(documentUri, false);	//TODO: True value causes deadlock due to false value in ExternalDocumentRef line 58
 		try {			
-			TypedValue document = new TypedValue(SpdxConstants.SPDX_DOCUMENT_ID, SpdxConstants.CLASS_SPDX_DOCUMENT);
+			TypedValue document = CompatibleModelStoreWrapper.typedValueFromDocUri(documentUri, 
+					SpdxConstantsCompatV2.SPDX_DOCUMENT_ID, false, SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT);
 			ArrayNode relationships = mapper.createArrayNode();
 			ObjectNode doc = typedValueToObjectNode(documentUri, document, relationships);
-			doc.put(SpdxConstants.PROP_DOCUMENT_NAMESPACE, documentUri);
-			ArrayNode packages = getDocElements(documentUri, SpdxConstants.CLASS_SPDX_PACKAGE, relationships);
+			doc.put(SpdxConstantsCompatV2.PROP_DOCUMENT_NAMESPACE.getName(), documentUri);
+			ArrayNode packages = getDocElements(documentUri, SpdxConstantsCompatV2.CLASS_SPDX_PACKAGE, relationships);
 			if (packages.size() > 0) {
-				doc.set(SpdxConstants.PROP_DOCUMENT_PACKAGES, packages);
+				doc.set(SpdxConstantsCompatV2.PROP_DOCUMENT_PACKAGES.getName(), packages);
 			}
-			ArrayNode files = getDocElements(documentUri, SpdxConstants.CLASS_SPDX_FILE, relationships);
+			ArrayNode files = getDocElements(documentUri, SpdxConstantsCompatV2.CLASS_SPDX_FILE, relationships);
 			if (files.size() > 0) {
-				doc.set(SpdxConstants.PROP_DOCUMENT_FILES, files);
+				doc.set(SpdxConstantsCompatV2.PROP_DOCUMENT_FILES.getName(), files);
 			}
-			ArrayNode snippets = getDocElements(documentUri, SpdxConstants.CLASS_SPDX_SNIPPET, relationships);
+			ArrayNode snippets = getDocElements(documentUri, SpdxConstantsCompatV2.CLASS_SPDX_SNIPPET, relationships);
 			if (snippets.size() > 0) {
-				doc.set(SpdxConstants.PROP_DOCUMENT_SNIPPETS, snippets);
+				doc.set(SpdxConstantsCompatV2.PROP_DOCUMENT_SNIPPETS.getName(), snippets);
 			}
 			//Remove duplicate relationships
 			Map<String, Map<String, Set<String>>> iDRelTypeRelatediDMap = new HashMap<>();
@@ -267,9 +284,9 @@ public class JacksonSerializer {
 			ArrayNode deDupedRelationships = new ArrayNode(JsonNodeFactory.instance);
 			while (relIter.hasNext()) {
 				JsonNode relationship = relIter.next();
-				String id = relationship.get(SpdxConstants.PROP_SPDX_ELEMENTID).asText();
-				String relType = relationship.get(SpdxConstants.PROP_RELATIONSHIP_TYPE).asText();
-				String relatedID = relationship.get(SpdxConstants.PROP_RELATED_SPDX_ELEMENT).asText();
+				String id = relationship.get(SpdxConstantsCompatV2.PROP_SPDX_ELEMENTID.getName()).asText();
+				String relType = relationship.get(SpdxConstantsCompatV2.PROP_RELATIONSHIP_TYPE.getName()).asText();
+				String relatedID = relationship.get(SpdxConstantsCompatV2.PROP_RELATED_SPDX_ELEMENT.getName()).asText();
 				Map<String, Set<String>> relTypeRelatedIdMap = iDRelTypeRelatediDMap.get(id);
 				if (Objects.isNull(relTypeRelatedIdMap)) {
 					relTypeRelatedIdMap = new HashMap<>();
@@ -287,7 +304,7 @@ public class JacksonSerializer {
 			}
 			
 			
-			doc.set(SpdxConstants.PROP_DOCUMENT_RELATIONSHIPS, deDupedRelationships);
+			doc.set(SpdxConstantsCompatV2.PROP_DOCUMENT_RELATIONSHIPS.getName(), deDupedRelationships);
 			ObjectNode output;
 			switch (format) {
 				case YAML: {
@@ -328,38 +345,40 @@ public class JacksonSerializer {
 		ObjectNode retval = mapper.createObjectNode();
 		Set<String> hasFileIds = new HashSet<>(); // keep track of any hasFile properties added to avoid duplicates
 		Set<String> documentDescribesIds = new HashSet<>(); // keep track of any documentDescribes properties added to avoid duplicates
-		List<String> docPropNames = new ArrayList<String>(store.getPropertyValueNames(documentUri, storedItem.getId()));
+		List<String> docPropNames = new ArrayList<String>(store.getPropertyValueNames(storedItem.getObjectUri()));
 		docPropNames.sort(new PropertyComparator(storedItem.getType()));
-		Class<?> clazz = SpdxModelFactory.SPDX_TYPE_TO_CLASS.get(storedItem.getType());
-		IdType idType = store.getIdType(storedItem.getId());
+		Class<?> clazz = SpdxModelFactoryCompatV2.SPDX_TYPE_TO_CLASS_V2.get(storedItem.getType());
+		IdType idType = store.getIdType(storedItem.getObjectUri());
+		String id = CompatibleModelStoreWrapper.objectUriToId(store, storedItem.getObjectUri(), documentUri);
 		if (SpdxElement.class.isAssignableFrom(clazz)) {
 			if (IdType.SpdxId.equals(idType)) {
-				retval.put(SpdxConstants.SPDX_IDENTIFIER, storedItem.getId());
+				retval.put(SpdxConstantsCompatV2.SPDX_IDENTIFIER, CompatibleModelStoreWrapper.objectUriToId(store, storedItem.getObjectUri(), documentUri));
 			} else if (!IdType.Anonymous.equals(idType)) {
-				logger.error("Invalid ID "+storedItem.getId()+".  Must be an SPDX Identifier or Anonymous");
-				throw new InvalidSPDXAnalysisException("Invalid ID "+storedItem.getId()+".  Must be an SPDX Identifier or Anonymous");
+				logger.error("Invalid ID "+storedItem.getObjectUri()+".  Must be an SPDX Identifier or Anonymous");
+				throw new InvalidSPDXAnalysisException("Invalid ID "+storedItem.getObjectUri()+".  Must be an SPDX Identifier or Anonymous");
 			}
 		} else if (ExternalDocumentRef.class.isAssignableFrom(clazz)) {
-			retval.put(SpdxConstants.EXTERNAL_DOCUMENT_REF_IDENTIFIER, storedItem.getId());
+			retval.put(SpdxConstantsCompatV2.EXTERNAL_DOCUMENT_REF_IDENTIFIER, CompatibleModelStoreWrapper.objectUriToId(store, storedItem.getObjectUri(), documentUri));
 		} else if (SimpleLicensingInfo.class.isAssignableFrom(clazz)) {
-			retval.put(SpdxConstants.PROP_LICENSE_ID, storedItem.getId());
+			retval.put(SpdxConstantsCompatV2.PROP_LICENSE_ID.getName(), id);
 		}
 		for (String propertyName:docPropNames) {
-			if (SpdxConstants.PROP_RELATIONSHIP.equals(propertyName)) {
+			if (SpdxConstantsCompatV2.PROP_RELATIONSHIP.getName().equals(propertyName)) {
 				addJsonRelationships(documentUri, storedItem, retval, relationships, hasFileIds, documentDescribesIds);
-			} else if (SpdxConstants.PROP_SPDX_EXTRACTED_LICENSES.equals(propertyName)) {
+			} else if (SpdxConstantsCompatV2.PROP_SPDX_EXTRACTED_LICENSES.getName().equals(propertyName)) {
 				retval.set(MultiFormatStore.propertyNameToCollectionPropertyName(propertyName), 
-						toExtractedLicensesArrayNode(documentUri, storedItem.getId(), propertyName, relationships));
-			} else if (store.isCollectionProperty(documentUri, storedItem.getId(), propertyName)) {
-				Iterator<Object> propertyValues = store.listValues(documentUri, storedItem.getId(), propertyName);
+						toExtractedLicensesArrayNode(documentUri, id, propertyName, relationships));
+			} else if (store.isCollectionProperty(documentUri, id, propertyName)) {
+				Iterator<Object> propertyValues = store.listValues(documentUri, id, propertyName);
 				ArrayNode valuesArray;
-				if (SpdxConstants.PROP_PACKAGE_FILE.equals(propertyName) && hasFileIds.size() > 0) {
+				if (SpdxConstantsCompatV2.PROP_PACKAGE_FILE.getName().equals(propertyName) && hasFileIds.size() > 0) {
 					// Need to filter out existing hasFileIds
 					List<Object> hasFilesToAdd = new ArrayList<>();
 					while (propertyValues.hasNext()) {
 						Object fileToAdd = propertyValues.next();
 						if (fileToAdd instanceof TypedValue) {
-							String fileToAddId = ((TypedValue)fileToAdd).getId();
+							String fileToAddId = CompatibleModelStoreWrapper.objectUriToId(store, 
+									((TypedValue)fileToAdd).getObjectUri(), documentUri);
 							if (!hasFileIds.contains(fileToAddId)) {
 								hasFilesToAdd.add(fileToAdd);
 								hasFileIds.add(fileToAddId);
@@ -371,13 +390,14 @@ public class JacksonSerializer {
 					valuesArray = toArrayNode(documentUri, hasFilesToAdd.iterator(), 
 							relationships);
 					
-				} else if (SpdxConstants.PROP_DOCUMENT_DESCRIBES.equals(propertyName) && documentDescribesIds.size() > 0) {
+				} else if (SpdxConstantsCompatV2.PROP_DOCUMENT_DESCRIBES.getName().equals(propertyName) && documentDescribesIds.size() > 0) {
 					// Need to filter out existing documentDescribes
 					List<Object> describesToAdd = new ArrayList<>();
 					while (propertyValues.hasNext()) {
 						Object describedElementToAdd = propertyValues.next();
 						if (describedElementToAdd instanceof TypedValue) {
-							String describedElementToAddId = ((TypedValue)describedElementToAdd).getId();
+							String describedElementToAddId = CompatibleModelStoreWrapper.objectUriToId(store, 
+									((TypedValue)describedElementToAdd).getObjectUri(), documentUri);
 							if (!hasFileIds.contains(describedElementToAddId)) {
 								describesToAdd.add(describedElementToAdd);
 								hasFileIds.add(describedElementToAddId);
@@ -395,7 +415,7 @@ public class JacksonSerializer {
 				retval.set(MultiFormatStore.propertyNameToCollectionPropertyName(propertyName), 
 						valuesArray);
 			} else {
-				Optional<Object> value = store.getValue(documentUri, storedItem.getId(), propertyName);
+				Optional<Object> value = store.getValue(documentUri, id, propertyName);
 				if (value.isPresent()) {
 					setValueField(retval, propertyName, documentUri, value.get(), relationships);
 				}
@@ -439,8 +459,8 @@ public class JacksonSerializer {
 		while (extractedLicenses.hasNext()) {
 			Object extractedLicense = extractedLicenses.next();
 			if (!(extractedLicense instanceof TypedValue) || 
-					(!SpdxConstants.CLASS_SPDX_EXTRACTED_LICENSING_INFO.equals(((TypedValue)extractedLicense).getType()))) {
-				throw new SpdxInvalidTypeException("Extracted License Infos not of type "+SpdxConstants.CLASS_SPDX_EXTRACTED_LICENSING_INFO);
+					(!SpdxConstantsCompatV2.CLASS_SPDX_EXTRACTED_LICENSING_INFO.equals(((TypedValue)extractedLicense).getType()))) {
+				throw new SpdxInvalidTypeException("Extracted License Infos not of type "+SpdxConstantsCompatV2.CLASS_SPDX_EXTRACTED_LICENSING_INFO);
 			}
 			retval.add(typedValueToObjectNode(documentUri, (TypedValue)extractedLicense, relationships));
 		}
@@ -461,36 +481,37 @@ public class JacksonSerializer {
 	 */
 	private void addJsonRelationships(String documentUri, TypedValue element, ObjectNode elementNode,
 			ArrayNode relationships, Set<String> hasFileIds, Set<String> documentDescribesIds) throws InvalidSPDXAnalysisException {
-		Iterator<Object> valueList = store.listValues(documentUri, element.getId(), 
-				SpdxConstants.PROP_RELATIONSHIP);
+		Iterator<Object> valueList = store.listValues(documentUri, CompatibleModelStoreWrapper.objectUriToId(store, 
+				element.getObjectUri(), documentUri), 
+				SpdxConstantsCompatV2.PROP_RELATIONSHIP);
 		while (valueList.hasNext()) {
 			Object value = valueList.next();
 			if (!(value instanceof TypedValue)) {
 				throw new SpdxInvalidTypeException("Expected relationship type, value list element was of type "+value.getClass().toString());
 			}
 			TypedValue tvValue = (TypedValue)value;
-			if (!SpdxConstants.CLASS_RELATIONSHIP.equals(tvValue.getType())) {
+			String tvId = CompatibleModelStoreWrapper.objectUriToId(store, tvValue.getObjectUri(), documentUri);
+			if (!SpdxConstantsCompatV2.CLASS_RELATIONSHIP.equals(tvValue.getType())) {
 				throw new SpdxInvalidTypeException("Expected relationship type, value list element was of type "+tvValue.getType());
 			}
-			Optional<Object> relatedSpdxElement = store.getValue(documentUri, tvValue.getId(), SpdxConstants.PROP_RELATED_SPDX_ELEMENT); 
+			Optional<Object> relatedSpdxElement = store.getValue(documentUri, tvId, SpdxConstantsCompatV2.PROP_RELATED_SPDX_ELEMENT); 
 			if (!relatedSpdxElement.isPresent()) {
-				logger.warn("Missing related SPDX element for a relationship for "+element.getId()+".  Skipping the serialization of this relationship.");
+				logger.warn("Missing related SPDX element for a relationship for "+element.getObjectUri()+".  Skipping the serialization of this relationship.");
 				continue;
 			}
-			Optional<Object> relationshipComment = store.getValue(documentUri, tvValue.getId(), SpdxConstants.RDFS_PROP_COMMENT);
+			Optional<Object> relationshipComment = store.getValue(documentUri, tvId, SpdxConstantsCompatV2.RDFS_PROP_COMMENT);
 			String relatedElementId;
 			if (relatedSpdxElement.get() instanceof TypedValue) {
-				relatedElementId = ((TypedValue)relatedSpdxElement.get()).getId();
+				relatedElementId = CompatibleModelStoreWrapper.objectUriToId(store, ((TypedValue)relatedSpdxElement.get()).getObjectUri(), documentUri);
 			} else if (relatedSpdxElement.get() instanceof IndividualUriValue) {
 				String externalUri = ((IndividualUriValue)relatedSpdxElement.get()).getIndividualURI();
-				if (SpdxConstants.URI_VALUE_NONE.equals(externalUri)) {
-					relatedElementId = SpdxConstants.NONE_VALUE;
-				} else if (SpdxConstants.URI_VALUE_NOASSERTION.equals(externalUri)) {
-					relatedElementId = SpdxConstants.NOASSERTION_VALUE;
-				} else if (SpdxConstants.EXTERNAL_SPDX_ELEMENT_URI_PATTERN.matcher(externalUri).matches()) {
+				if (SpdxConstantsCompatV2.URI_VALUE_NONE.equals(externalUri)) {
+					relatedElementId = SpdxConstantsCompatV2.NONE_VALUE;
+				} else if (SpdxConstantsCompatV2.URI_VALUE_NOASSERTION.equals(externalUri)) {
+					relatedElementId = SpdxConstantsCompatV2.NOASSERTION_VALUE;
+				} else if (SpdxConstantsCompatV2.EXTERNAL_SPDX_ELEMENT_URI_PATTERN.matcher(externalUri).matches()) {
 					// external SPDX element
-					ExternalSpdxElement externalElement = ExternalSpdxElement.uriToExternalSpdxElement(externalUri, store, documentUri, null);
-					relatedElementId = externalElement.getExternalDocumentId() + ":" + externalElement.getExternalElementId();
+					relatedElementId = ExternalSpdxElement.uriToExternalSpdxElementReference(externalUri, store, documentUri, null, CompatibleModelStoreWrapper.LATEST_SPDX_2X_VERSION);
 				} else {
 					throw new SpdxInvalidTypeException("SPDX element must be of SpdxElement, SpdxNoneElement, SpdxNoAssertionElement or external SPDX element type.  URI does not match pattern for external element: "+externalUri);
 				}
@@ -498,9 +519,9 @@ public class JacksonSerializer {
 				throw new SpdxInvalidTypeException("SPDX element must be of SpdxElement or external SPDX element type.  Found type "+relatedSpdxElement.get().getClass().toString());
 			}
 			
-			Optional<Object> relationshipType = store.getValue(documentUri, tvValue.getId(), SpdxConstants.PROP_RELATIONSHIP_TYPE);
+			Optional<Object> relationshipType = store.getValue(documentUri, tvId, SpdxConstantsCompatV2.PROP_RELATIONSHIP_TYPE);
 			if (!relationshipType.isPresent()) {
-				logger.warn("Missing type for a relationship for "+element.getId()+".  Skipping the serialization of this relationship.");
+				logger.warn("Missing type for a relationship for "+element.getObjectUri()+".  Skipping the serialization of this relationship.");
 				continue;
 			}
 			if (!(relationshipType.get() instanceof IndividualUriValue)) {
@@ -508,11 +529,12 @@ public class JacksonSerializer {
 			}
 			String relationshipTypeStr = individualUriToString(documentUri, ((IndividualUriValue)relationshipType.get()).getIndividualURI());
 			ObjectNode relationship = mapper.createObjectNode();
-			relationship.put(SpdxConstants.PROP_SPDX_ELEMENTID, element.getId());
-			relationship.put(SpdxConstants.PROP_RELATIONSHIP_TYPE, relationshipTypeStr);
-			relationship.put(SpdxConstants.PROP_RELATED_SPDX_ELEMENT, relatedElementId);
+			relationship.put(SpdxConstantsCompatV2.PROP_SPDX_ELEMENTID.getName(), CompatibleModelStoreWrapper.objectUriToId(store, 
+					element.getObjectUri(), documentUri));
+			relationship.put(SpdxConstantsCompatV2.PROP_RELATIONSHIP_TYPE.getName(), relationshipTypeStr);
+			relationship.put(SpdxConstantsCompatV2.PROP_RELATED_SPDX_ELEMENT.getName(), relatedElementId);
 			if (relationshipComment.isPresent()) {
-				relationship.put(SpdxConstants.RDFS_PROP_COMMENT, (String)relationshipComment.get());
+				relationship.put(SpdxConstantsCompatV2.RDFS_PROP_COMMENT.getName(), (String)relationshipComment.get());
 			}
 			relationships.add(relationship);
 		}
@@ -575,16 +597,17 @@ public class JacksonSerializer {
 			return individualUriToString(documentUri, ((IndividualUriValue)value).getIndividualURI());
 		} else if (value instanceof TypedValue) {
 			TypedValue tvStoredValue = (TypedValue)value;
-			Class<?> clazz = SpdxModelFactory.SPDX_TYPE_TO_CLASS.get(tvStoredValue.getType());
+			String tvId = CompatibleModelStoreWrapper.objectUriToId(store, tvStoredValue.getObjectUri(), documentUri);
+			Class<?> clazz = SpdxModelFactoryCompatV2.SPDX_TYPE_TO_CLASS_V2.get(tvStoredValue.getType());
 			if (AnyLicenseInfo.class.isAssignableFrom(clazz) && 
 					(Verbose.STANDARD.equals(verbose) || Verbose.COMPACT.equals(verbose))) {
-				AnyLicenseInfo ali = (AnyLicenseInfo)SpdxModelFactory.createModelObject(store, documentUri, 
-						tvStoredValue.getId(), tvStoredValue.getType(), null);
-				return ali.toString();
+				CoreModelObject inflated = ModelRegistry.getModelRegistry().inflateModelObject(store, tvStoredValue.getObjectUri(), tvStoredValue.getType(), 
+						null, tvStoredValue.getSpecVersion(), false, documentUri + "#");
+				return inflated.toString();
 			} else if (SpdxElement.class.isAssignableFrom(clazz) &&
 					Verbose.COMPACT.equals(verbose) &&
-					!IModelStore.IdType.Anonymous.equals(store.getIdType(tvStoredValue.getId()))) {
-				return tvStoredValue.getId();
+					!IModelStore.IdType.Anonymous.equals(store.getIdType(tvId))) {
+				return tvId;
 			} else {
 				return typedValueToObjectNode(documentUri, (TypedValue)value, relationships);
 			}
@@ -601,22 +624,22 @@ public class JacksonSerializer {
 	 * @throws InvalidSPDXAnalysisException
 	 */
 	private String individualUriToString(String documentUri, String uri) throws InvalidSPDXAnalysisException {
-		Object enumval = SpdxEnumFactory.uriToEnum.get(uri);
+		Object enumval = SpdxEnumFactoryCompatV2.uriToEnum.get(uri);
 		if (Objects.nonNull(enumval)) {
 			if (enumval instanceof RelationshipType || enumval instanceof Purpose) {
 				return enumval.toString();
 			} else {
 				return enumval.toString().replaceAll("_", "-");
 			}
-		} else if (SpdxConstants.EXTERNAL_SPDX_ELEMENT_URI_PATTERN.matcher(uri).matches()) {
-			ExternalSpdxElement externalElement = ExternalSpdxElement.uriToExternalSpdxElement(uri, store, documentUri, null);
-			return externalElement.getExternalDocumentId() + ":" + externalElement.getExternalElementId();
-		} else if (SpdxConstants.URI_VALUE_NONE.equals(uri)) {
-			return SpdxConstants.NONE_VALUE;
-		} else if (SpdxConstants.URI_VALUE_NOASSERTION.equals(uri)) {
-			return SpdxConstants.NOASSERTION_VALUE;
-		} else if (uri.startsWith(SpdxConstants.SPDX_LISTED_REFERENCE_TYPES_PREFIX)) {
-		    return uri.substring(SpdxConstants.SPDX_LISTED_REFERENCE_TYPES_PREFIX.length());
+		} else if (SpdxConstantsCompatV2.EXTERNAL_SPDX_ELEMENT_URI_PATTERN.matcher(uri).matches()) {
+			return ExternalSpdxElement.uriToExternalSpdxElementReference(uri, store, documentUri, null, 
+					CompatibleModelStoreWrapper.LATEST_SPDX_2X_VERSION);
+		} else if (SpdxConstantsCompatV2.URI_VALUE_NONE.equals(uri)) {
+			return SpdxConstantsCompatV2.NONE_VALUE;
+		} else if (SpdxConstantsCompatV2.URI_VALUE_NOASSERTION.equals(uri)) {
+			return SpdxConstantsCompatV2.NOASSERTION_VALUE;
+		} else if (uri.startsWith(SpdxConstantsCompatV2.SPDX_LISTED_REFERENCE_TYPES_PREFIX)) {
+		    return uri.substring(SpdxConstantsCompatV2.SPDX_LISTED_REFERENCE_TYPES_PREFIX.length());
 		} else {
 			return uri;
 		}
