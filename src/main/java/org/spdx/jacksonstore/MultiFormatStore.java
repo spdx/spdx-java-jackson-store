@@ -185,6 +185,9 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 			List<String> allDocuments = getAllItems(null, SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT)
 					.map(tv -> tv.getObjectUri().substring(0, tv.getObjectUri().indexOf('#')))
 					.collect(Collectors.toList());
+			if (allDocuments.isEmpty()) {
+				logger.warn("No SPDX Spec Version 2 Documents were found to serialize.  Note: For SPDX Spec version 3, the spdx-v3jsonld-store should be used");
+			}
 			output = allDocuments.size() == 1 ? serializer.docToJsonNode(allDocuments.get(0)) :
 					serializer.docsToJsonNode(allDocuments);
 		}
