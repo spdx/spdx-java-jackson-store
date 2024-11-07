@@ -96,6 +96,8 @@ public class JacksonDeSerializer {
 
     /**
      * @param store store to store any documents in
+     * @param modelCopyManager copy manager to use when copying from the SPDX listed license model store
+     * @parm format Format expected for the serialized data
      */
     public JacksonDeSerializer(IModelStore store, IModelCopyManager modelCopyManager, Format format) {
         Objects.requireNonNull(store, "Model store can not be null");
