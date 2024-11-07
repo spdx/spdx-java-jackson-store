@@ -31,6 +31,7 @@ import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
+import org.spdx.core.IModelCopyManager;
 import org.spdx.core.IndividualUriValue;
 import org.spdx.core.InvalidSPDXAnalysisException;
 import org.spdx.core.ModelObjectHelper;
