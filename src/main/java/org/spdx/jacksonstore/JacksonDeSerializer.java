@@ -79,6 +79,8 @@ public class JacksonDeSerializer {
 	private CompatibleModelStoreWrapper store;
 	@SuppressWarnings("unused")
 	private Format format;
+
+    private IModelCopyManager modelCopyManager;
 	private Map<String, Map<String, Map<SimpleUriValue, String>>> addedRelationships = new HashMap<>();
 
 	/**
@@ -90,6 +92,18 @@ public class JacksonDeSerializer {
 		this.store = new CompatibleModelStoreWrapper(store);
 		this.format = format;
 	}
+
+    /**
+     * @param store store to store any documents in
+     */
+    public JacksonDeSerializer(IModelStore store, IModelCopyManager modelCopyManager, Format format) {
+        Objects.requireNonNull(store, "Model store can not be null");
+        Objects.requireNonNull(modelCopyManager, "Model copy manager can not be null");
+        Objects.requireNonNull(format, "Format can not be null");
+        this.store = new CompatibleModelStoreWrapper(store);
+        this.modelCopyManager = modelCopyManager;
+        this.format = format;
+    }
 
 	/**
 	 * Stores an SPDX document converted from the JsonNode doc
@@ -543,8 +557,8 @@ public class JacksonDeSerializer {
 			// check for SPDX model classes
 			if (AnyLicenseInfo.class.isAssignableFrom(clazz)) {
 				// convert license expressions to their model object form
-				AnyLicenseInfo parsedLicense = LicenseInfoFactory.parseSPDXLicenseStringCompatV2(value.asText(), store, documentUri, null);
-				return ModelObjectHelper.modelObjectToStoredObject(parsedLicense, store, null, null);			
+				AnyLicenseInfo parsedLicense = LicenseInfoFactory.parseSPDXLicenseStringCompatV2(value.asText(), store, documentUri, modelCopyManager);
+				return ModelObjectHelper.modelObjectToStoredObject(parsedLicense, store, modelCopyManager, null);
 			} else if (SpdxDocument.class.isAssignableFrom(clazz)) {
 				// Convert any IndividualUriValue values
 				final String uriValue = value.asText();
@@ -676,7 +690,7 @@ public class JacksonDeSerializer {
 					@Override
 					public String getIndividualURI() {
 						try {
-							return ExternalSpdxElement.externalSpdxElementIdToURI(spdxId, modelStore, documentNamespace, null);
+							return ExternalSpdxElement.externalSpdxElementIdToURI(spdxId, modelStore, documentNamespace, modelCopyManager);
 						} catch (InvalidSPDXAnalysisException e) {
 							throw new RuntimeException(e);
 						}

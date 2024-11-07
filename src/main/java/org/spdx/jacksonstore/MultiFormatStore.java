@@ -296,7 +296,7 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 				this.leaveCriticalSection(lock);
 			}
 		}
-		JacksonDeSerializer deSerializer = new JacksonDeSerializer(this, format);
+		JacksonDeSerializer deSerializer = new JacksonDeSerializer(this, new ModelCopyManager(), format);
 		String docNamespace;
 		if (root instanceof ArrayNode) {
 			for (JsonNode doc:(ArrayNode)root) {
