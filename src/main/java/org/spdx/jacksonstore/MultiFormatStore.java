@@ -1,14 +1,14 @@
 /**
  * Copyright (c) 2020 Source Auditor Inc.
- *
+ * <p>
  * SPDX-License-Identifier: Apache-2.0
- * 
+ * <p>
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
  *   You may obtain a copy of the License at
- *
+ * <p>
  *       http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  *   Unless required by applicable law or agreed to in writing, software
  *   distributed under the License is distributed on an "AS IS" BASIS,
  *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -57,8 +58,8 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 /**
  * Model store that supports multiple serialization formats (JSON, XML, YAML)
- * 
- * Note that the serialization/deserlization methods are synchronized to prevent the format or verbose changing while serilizing
+ * <p>
+ * Note that the serialization/deserialization methods are synchronized to prevent the format or verbose changing while serializing
  * 
  * @author Gary O'Neall
  *
@@ -71,9 +72,9 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 		COMPACT,		// SPDX identifiers are used for any SPDX element references, license expressions as text
 		STANDARD,		// Expand referenced SPDX element, license expressions as text
 		FULL			// Expand all licenses to full objects and expand all SPDX elements
-	};
-	
-	public enum Format {
+	}
+
+    public enum Format {
 		JSON,
 		JSON_PRETTY,	// pretty printed JSON format
 		XML,
@@ -92,7 +93,7 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 	private ObjectMapper inputMapper;
 	
 	/**
-	 * @param baseStore modelStore to store the results of the desearialization
+	 * @param baseStore modelStore to store the results of the deserialization
 	 * @param format Format - XML, JSON or YAML
 	 * @param verbose How verbose to make the document
 	 */
@@ -120,7 +121,7 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 	
 	/**
 	 * Default compact version of MultiFormatStore
-	 * @param baseStore modelStore to store the results of the desearialization
+	 * @param baseStore modelStore to store the results of the deserialization
 	 * @param format Format - XML, JSON or YAML
 	 */
 	public MultiFormatStore(IModelStore baseStore, Format format) {
@@ -198,15 +199,12 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
     				jgen = yamlFactory.createGenerator(stream); 
     				break;
     			}
-    			case XML: {
-    				jgen = outputMapper.getFactory().createGenerator(stream).useDefaultPrettyPrinter(); 
-    				break;
-    			}
     			case JSON: {
     				jgen = outputMapper.getFactory().createGenerator(stream);
     				break;
     			}
     			case JSON_PRETTY:
+				case XML:
     			default:  {
     				jgen = outputMapper.getFactory().createGenerator(stream).useDefaultPrettyPrinter(); 
     				break;
@@ -221,7 +219,7 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 	}
 
 	/**
-	 * @param propertyName
+	 * @param propertyName name of the singular property
 	 * @return property name used for an array or collection of these values
 	 */
 	public static String propertyNameToCollectionPropertyName(String propertyName) {
@@ -256,7 +254,7 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 		JsonNode root;
 		if (Format.XML.equals(format)) {
 			// Jackson XML mapper does not support deserializing collections or arrays.  Use Json-In-Java to convert to JSON
-			JSONObject jo = XML.toJSONObject(new InputStreamReader(stream, "UTF-8"));
+			JSONObject jo = XML.toJSONObject(new InputStreamReader(stream, StandardCharsets.UTF_8));
 			root = inputMapper.readTree(jo.toString()).get("Document");
 		} else {
 			root  = inputMapper.readTree(stream);
@@ -266,7 +264,7 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 		}
 		List<String> documentNamespaces = new ArrayList<>();
 		if (root instanceof ArrayNode) {
-			for (JsonNode docNode:(ArrayNode)root) {
+			for (JsonNode docNode: root) {
 				documentNamespaces.add(getNamespaceFromDoc(docNode));
 			}
 		} else {
@@ -299,10 +297,10 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 		JacksonDeSerializer deSerializer = new JacksonDeSerializer(this, new ModelCopyManager(), format);
 		String docNamespace;
 		if (root instanceof ArrayNode) {
-			for (JsonNode doc:(ArrayNode)root) {
+			for (JsonNode doc: root) {
 				deSerializer.storeDocument(getNamespaceFromDoc(doc), doc);
 			}
-			docNamespace = getNamespaceFromDoc((ArrayNode)root.get(0));
+			docNamespace = getNamespaceFromDoc(root.get(0));
 		} else {
 			deSerializer.storeDocument(getNamespaceFromDoc(root), root);
 			docNamespace = getNamespaceFromDoc(root);
@@ -330,8 +328,8 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 	}
 
 	/**
-	 * @param documentNamespace
-	 * @throws InvalidSPDXAnalysisException 
+	 * @param documentNamespace Document namespace or Uri
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
 	public void clear(String documentNamespace) throws InvalidSPDXAnalysisException {
 		List<TypedValue> valuesToDelete = this.getAllItems(documentNamespace, null).collect(Collectors.toList());
@@ -341,8 +339,8 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 	}
 
 	/**
-	 * @return list of SPDX V2 document URI's in this model store 
-	 * @throws InvalidSPDXAnalysisException 
+	 * @return set of SPDX V2 document URI's in this model store
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
 	public Set<String> getDocumentUris() throws InvalidSPDXAnalysisException {
 		Set<String> retval = new HashSet<>();

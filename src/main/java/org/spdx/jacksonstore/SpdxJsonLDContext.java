@@ -1,14 +1,14 @@
 /**
  * Copyright (c) 2020 Source Auditor Inc.
- *
+ * <p>
  * SPDX-License-Identifier: Apache-2.0
- * 
+ * <p>
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
  *   You may obtain a copy of the License at
- *
+ * <p>
  *       http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  *   Unless required by applicable law or agreed to in writing, software
  *   distributed under the License is distributed on an "AS IS" BASIS,
  *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -52,12 +52,12 @@ public class SpdxJsonLDContext {
 	}
 	
 	/**
-	 * Maps XML Schema primitive types to Java classes supported by the SPDX stores. 
-	 * See https://www.w3.org/TR/xmlschema-2 for a description of XML schema types.
-	 */
-	public static Map<String, Class<? extends Object>> XMLSCHEMA_TYPE_TO_JAVA_CLASS;
+     * Maps XML Schema primitive types to Java classes supported by the SPDX stores.
+     * See <a href="https://www.w3.org/TR/xmlschema-2">xml-schema</a> for a description of XML schema types.
+     */
+	public static Map<String, Class<?>> XMLSCHEMA_TYPE_TO_JAVA_CLASS;
 	static {
-		Map<String, Class<? extends Object>> schemaToClass = new HashMap<>();
+		Map<String, Class<?>> schemaToClass = new HashMap<>();
 		schemaToClass.put("string", String.class);
 		schemaToClass.put("boolean", Boolean.class);
 		schemaToClass.put("decimal", String.class);
@@ -110,7 +110,7 @@ public class SpdxJsonLDContext {
 	static private SpdxJsonLDContext instance;
 	static final String JSON_LD_PATH = "/resources/spdx-2-3-revision-2-onotology.context.json";
 	static final ObjectMapper JSON_MAPPER = new ObjectMapper();
-	private JsonNode contexts;
+	private final JsonNode contexts;
 	
 	private SpdxJsonLDContext() throws InvalidSPDXAnalysisException {
 		try (InputStream is = SpdxJsonLDContext.class.getResourceAsStream(JSON_LD_PATH)) {
@@ -144,8 +144,8 @@ public class SpdxJsonLDContext {
 	}
 	
 	/**
-	 * @param propertyName
-	 * @return type type for the property name if the type is specified in the JSON-LD context
+	 * @param propertyName Name of the property
+	 * @return type for the property name if the type is specified in the JSON-LD context
 	 */
 	public Optional<String> getType(String propertyName) {
 		JsonNode propContext = this.contexts.get(propertyName);
@@ -182,7 +182,7 @@ public class SpdxJsonLDContext {
 	}
 
 	/**
-	 * @param property
+	 * @param property JSON name of the property
 	 * @return true if the property is a list
 	 */
 	public boolean isList(String property) {
@@ -195,12 +195,11 @@ public class SpdxJsonLDContext {
 			return false;
 		}
 		if (jnContainer.isArray()) {
-			Iterator<JsonNode> iter = jnContainer.iterator();
-			while (iter.hasNext()) {
-				if (LIST_CONTAINER_TYPES.contains(iter.next().asText())) {
-					return true;
-				}
-			}
+            for (JsonNode jsonNode : jnContainer) {
+                if (LIST_CONTAINER_TYPES.contains(jsonNode.asText())) {
+                    return true;
+                }
+            }
 			return false;
 		} else {
 			return LIST_CONTAINER_TYPES.contains(jnContainer.asText());

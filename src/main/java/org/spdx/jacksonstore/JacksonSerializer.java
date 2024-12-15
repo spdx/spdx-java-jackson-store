@@ -1,14 +1,14 @@
 /**
  * Copyright (c) 2020 Source Auditor Inc.
- *
+ * <p>
  * SPDX-License-Identifier: Apache-2.0
- * 
+ * <p>
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
  *   You may obtain a copy of the License at
- *
+ * <p>
  *       http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  *   Unless required by applicable law or agreed to in writing, software
  *   distributed under the License is distributed on an "AS IS" BASIS,
  *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -62,7 +62,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Serializer for a model store to convert the document model object into a JsonNode
- * 
+ * <p>
  * the method <code>docToJsonNode(String documentUri)</code> will generate the JSON node for a document
  * @author Gary O'Neall
  *
@@ -75,7 +75,7 @@ public class JacksonSerializer {
 	 * Class to for the name of the XML element to Document
 	 *
 	 */
-	class Document extends ObjectNode {
+    static class Document extends ObjectNode {
 
 		/**
 		 * 
@@ -112,10 +112,10 @@ public class JacksonSerializer {
 					return -1;
 				} else {
 					List<JsonNode> list0 = new ArrayList<>();
-					arg0.spliterator().forEachRemaining((node) -> list0.add(node));
+					arg0.spliterator().forEachRemaining(list0::add);
 					list0.sort(NODE_COMPARATOR);
 					List<JsonNode> list1 = new ArrayList<>();
-					arg1.spliterator().forEachRemaining((node) -> list1.add(node));
+					arg1.spliterator().forEachRemaining(list1::add);
 					list1.sort(NODE_COMPARATOR);
 					for (int i = 0; i < list0.size(); i++) {
 						int retval = compare(list0.get(i), list1.get(i));
@@ -158,7 +158,7 @@ public class JacksonSerializer {
 					return compareExternalRef(refCategory0.asText(), refType0.asText(), refLocator0.asText(), arg1);
 			}
 			List<String> fieldNames = new ArrayList<>();
-			arg0.fieldNames().forEachRemaining((String field) -> fieldNames.add(field));
+			arg0.fieldNames().forEachRemaining(fieldNames::add);
 			Collections.sort(fieldNames);
 			int retval = 0;
 			for (String fieldName:fieldNames) {
@@ -218,10 +218,10 @@ public class JacksonSerializer {
 		
 	};
 
-	private ObjectMapper mapper;
-	private CompatibleModelStoreWrapper store;
-	private Format format;
-	private Verbose verbose;
+	private final ObjectMapper mapper;
+	private final CompatibleModelStoreWrapper store;
+	private final Format format;
+	private final Verbose verbose;
 
 	/**
 	 * @param mapper Jackson Object Mapper to use for creating JSON objects
@@ -242,7 +242,7 @@ public class JacksonSerializer {
 	/**
 	 * @param documentUris list of document uris
 	 * @return JSON array of all documents which have the document Uris
-	 * @throws InvalidSPDXAnalysisException
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
 	public ArrayNode docsToJsonNode(List<String> documentUris) throws InvalidSPDXAnalysisException {
 		ArrayNode retval = mapper.createArrayNode();
@@ -255,7 +255,7 @@ public class JacksonSerializer {
 	/**
 	 * @param documentUri URI for the document to be converted
 	 * @return ObjectNode for an SPDX document in Jackson JSON tree format
-	 * @throws InvalidSPDXAnalysisException
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
 	public ObjectNode docToJsonNode(String documentUri) throws InvalidSPDXAnalysisException {
 		Objects.requireNonNull(documentUri,"Null Document URI");
@@ -267,15 +267,15 @@ public class JacksonSerializer {
 			ObjectNode doc = typedValueToObjectNode(documentUri, document, relationships);
 			doc.put(SpdxConstantsCompatV2.PROP_DOCUMENT_NAMESPACE.getName(), documentUri);
 			ArrayNode packages = getDocElements(documentUri, SpdxConstantsCompatV2.CLASS_SPDX_PACKAGE, relationships);
-			if (packages.size() > 0) {
+			if (!packages.isEmpty()) {
 				doc.set(SpdxConstantsCompatV2.PROP_DOCUMENT_PACKAGES.getName(), packages);
 			}
 			ArrayNode files = getDocElements(documentUri, SpdxConstantsCompatV2.CLASS_SPDX_FILE, relationships);
-			if (files.size() > 0) {
+			if (!files.isEmpty()) {
 				doc.set(SpdxConstantsCompatV2.PROP_DOCUMENT_FILES.getName(), files);
 			}
 			ArrayNode snippets = getDocElements(documentUri, SpdxConstantsCompatV2.CLASS_SPDX_SNIPPET, relationships);
-			if (snippets.size() > 0) {
+			if (!snippets.isEmpty()) {
 				doc.set(SpdxConstantsCompatV2.PROP_DOCUMENT_SNIPPETS.getName(), snippets);
 			}
 			//Remove duplicate relationships
@@ -307,19 +307,13 @@ public class JacksonSerializer {
 			doc.set(SpdxConstantsCompatV2.PROP_DOCUMENT_RELATIONSHIPS.getName(), deDupedRelationships);
 			ObjectNode output;
 			switch (format) {
-				case YAML: {
-					output = doc;
-					break;
-				}
 				case XML: {
 					output = new Document(JsonNodeFactory.instance);
 					output.setAll(doc);
 					break;
 				}
-				case JSON: {
-					output = doc;
-					break;
-				}
+				case JSON:
+				case YAML:
 				case JSON_PRETTY:
 				default:  {
 					output = doc;
@@ -338,14 +332,14 @@ public class JacksonSerializer {
 	 * @param storedItem stored value to convert to a JSON serializable form
 	 * @param relationships ArrayNode of relationships to add any found relationships
 	 * @return ObjectNode with all fields added from the stored typedValue
-	 * @throws InvalidSPDXAnalysisException 
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
 	private ObjectNode typedValueToObjectNode(String documentUri, TypedValue storedItem, 
 			ArrayNode relationships) throws InvalidSPDXAnalysisException {
 		ObjectNode retval = mapper.createObjectNode();
 		Set<String> hasFileIds = new HashSet<>(); // keep track of any hasFile properties added to avoid duplicates
 		Set<String> documentDescribesIds = new HashSet<>(); // keep track of any documentDescribes properties added to avoid duplicates
-		List<String> docPropNames = new ArrayList<String>(store.getPropertyValueNames(storedItem.getObjectUri()));
+		List<String> docPropNames = new ArrayList<>(store.getPropertyValueNames(storedItem.getObjectUri()));
 		docPropNames.sort(new PropertyComparator(storedItem.getType()));
 		Class<?> clazz = SpdxModelFactoryCompatV2.SPDX_TYPE_TO_CLASS_V2.get(storedItem.getType());
 		IdType idType = store.getIdType(storedItem.getObjectUri());
@@ -354,7 +348,7 @@ public class JacksonSerializer {
 			if (IdType.SpdxId.equals(idType)) {
 				retval.put(SpdxConstantsCompatV2.SPDX_IDENTIFIER, CompatibleModelStoreWrapper.objectUriToId(store, storedItem.getObjectUri(), documentUri));
 			} else if (!IdType.Anonymous.equals(idType)) {
-				logger.error("Invalid ID "+storedItem.getObjectUri()+".  Must be an SPDX Identifier or Anonymous");
+                logger.error("Invalid ID {}.  Must be an SPDX Identifier or Anonymous", storedItem.getObjectUri());
 				throw new InvalidSPDXAnalysisException("Invalid ID "+storedItem.getObjectUri()+".  Must be an SPDX Identifier or Anonymous");
 			}
 		} else if (ExternalDocumentRef.class.isAssignableFrom(clazz)) {
@@ -371,7 +365,7 @@ public class JacksonSerializer {
 			} else if (store.isCollectionProperty(documentUri, id, propertyName)) {
 				Iterator<Object> propertyValues = store.listValues(documentUri, id, propertyName);
 				ArrayNode valuesArray;
-				if (SpdxConstantsCompatV2.PROP_PACKAGE_FILE.getName().equals(propertyName) && hasFileIds.size() > 0) {
+				if (SpdxConstantsCompatV2.PROP_PACKAGE_FILE.getName().equals(propertyName) && !hasFileIds.isEmpty()) {
 					// Need to filter out existing hasFileIds
 					List<Object> hasFilesToAdd = new ArrayList<>();
 					while (propertyValues.hasNext()) {
@@ -390,7 +384,7 @@ public class JacksonSerializer {
 					valuesArray = toArrayNode(documentUri, hasFilesToAdd.iterator(), 
 							relationships);
 					
-				} else if (SpdxConstantsCompatV2.PROP_DOCUMENT_DESCRIBES.getName().equals(propertyName) && documentDescribesIds.size() > 0) {
+				} else if (SpdxConstantsCompatV2.PROP_DOCUMENT_DESCRIBES.getName().equals(propertyName) && !documentDescribesIds.isEmpty()) {
 					// Need to filter out existing documentDescribes
 					List<Object> describesToAdd = new ArrayList<>();
 					while (propertyValues.hasNext()) {
@@ -428,19 +422,17 @@ public class JacksonSerializer {
 	 * @param documentUri Document namespace or Uri
 	 * @param type type of document element to get (Package, File, or Snippet)
 	 * @return JsonArray of document elements matching the type
-	 * @throws InvalidSPDXAnalysisException
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
 	private ArrayNode getDocElements(String documentUri, String type, ArrayNode relationships) throws InvalidSPDXAnalysisException {
-		return store.getAllItems(documentUri, type).collect(() -> mapper.createArrayNode(), (an,  item) ->
+		return store.getAllItems(documentUri, type).collect(mapper::createArrayNode, (an, item) ->
 				{
 					try {
 						an.add(typedValueToObjectNode(documentUri, item, relationships));
 					} catch (InvalidSPDXAnalysisException e) {
 						throw new RuntimeException(e);
 					}
-				}, (an1, an2) -> {
-					an1.addAll(an2);
-				});
+				}, ArrayNode::addAll);
 	}
 	
 	/**
@@ -450,7 +442,7 @@ public class JacksonSerializer {
 	 * @param propertyName property name for the extracted licenses
 	 * @param relationships list of relationships - just so we can pass it to toJsonObject
 	 * @return an ArrayNode of extracted license elements
-	 * @throws InvalidSPDXAnalysisException
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
 	private ArrayNode toExtractedLicensesArrayNode(String documentUri, String id, String propertyName,
 			ArrayNode relationships) throws InvalidSPDXAnalysisException {
@@ -473,21 +465,21 @@ public class JacksonSerializer {
 	 * @param documentUri Document namespace or Uri
 	 * @param element element containing the relationship
 	 * @param elementNode the JSON node for the serialized element
-	 * @param valueList List of all relationships values
 	 * @param relationships ArrayNode of relationships to add any found relationships
 	 * @param hasFileIds set of hasFile property file Ids added to the element - used to avoid duplicates
-	 * @param documentDescribesids set of documentDescribes element IDs added to the element - used to avoid duplicates
-	 * @throws InvalidSPDXAnalysisException
+	 * @param documentDescribesIds set of documentDescribes element IDs added to the element - used to avoid duplicates
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
-	private void addJsonRelationships(String documentUri, TypedValue element, ObjectNode elementNode,
-			ArrayNode relationships, Set<String> hasFileIds, Set<String> documentDescribesIds) throws InvalidSPDXAnalysisException {
+	@SuppressWarnings("unused")
+    private void addJsonRelationships(String documentUri, TypedValue element, ObjectNode elementNode,
+                                      ArrayNode relationships, Set<String> hasFileIds, Set<String> documentDescribesIds) throws InvalidSPDXAnalysisException {
 		Iterator<Object> valueList = store.listValues(documentUri, CompatibleModelStoreWrapper.objectUriToId(store, 
 				element.getObjectUri(), documentUri), 
 				SpdxConstantsCompatV2.PROP_RELATIONSHIP);
 		while (valueList.hasNext()) {
 			Object value = valueList.next();
 			if (!(value instanceof TypedValue)) {
-				throw new SpdxInvalidTypeException("Expected relationship type, value list element was of type "+value.getClass().toString());
+				throw new SpdxInvalidTypeException("Expected relationship type, value list element was of type "+ value.getClass());
 			}
 			TypedValue tvValue = (TypedValue)value;
 			String tvId = CompatibleModelStoreWrapper.objectUriToId(store, tvValue.getObjectUri(), documentUri);
@@ -496,7 +488,7 @@ public class JacksonSerializer {
 			}
 			Optional<Object> relatedSpdxElement = store.getValue(documentUri, tvId, SpdxConstantsCompatV2.PROP_RELATED_SPDX_ELEMENT); 
 			if (!relatedSpdxElement.isPresent()) {
-				logger.warn("Missing related SPDX element for a relationship for "+element.getObjectUri()+".  Skipping the serialization of this relationship.");
+                logger.warn("Missing related SPDX element for a relationship for {}.  Skipping the serialization of this relationship.", element.getObjectUri());
 				continue;
 			}
 			Optional<Object> relationshipComment = store.getValue(documentUri, tvId, SpdxConstantsCompatV2.RDFS_PROP_COMMENT);
@@ -516,16 +508,16 @@ public class JacksonSerializer {
 					throw new SpdxInvalidTypeException("SPDX element must be of SpdxElement, SpdxNoneElement, SpdxNoAssertionElement or external SPDX element type.  URI does not match pattern for external element: "+externalUri);
 				}
 			}  else {
-				throw new SpdxInvalidTypeException("SPDX element must be of SpdxElement or external SPDX element type.  Found type "+relatedSpdxElement.get().getClass().toString());
+				throw new SpdxInvalidTypeException("SPDX element must be of SpdxElement or external SPDX element type.  Found type "+ relatedSpdxElement.get().getClass());
 			}
 			
 			Optional<Object> relationshipType = store.getValue(documentUri, tvId, SpdxConstantsCompatV2.PROP_RELATIONSHIP_TYPE);
 			if (!relationshipType.isPresent()) {
-				logger.warn("Missing type for a relationship for "+element.getObjectUri()+".  Skipping the serialization of this relationship.");
+                logger.warn("Missing type for a relationship for {}.  Skipping the serialization of this relationship.", element.getObjectUri());
 				continue;
 			}
 			if (!(relationshipType.get() instanceof IndividualUriValue)) {
-				throw new SpdxInvalidTypeException("Expected RelationshipType type for relationshipType property.  Unexpected type "+relatedSpdxElement.get().getClass().toString());
+				throw new SpdxInvalidTypeException("Expected RelationshipType type for relationshipType property.  Unexpected type "+ relatedSpdxElement.get().getClass());
 			}
 			String relationshipTypeStr = individualUriToString(documentUri, ((IndividualUriValue)relationshipType.get()).getIndividualURI());
 			ObjectNode relationship = mapper.createObjectNode();
@@ -533,9 +525,7 @@ public class JacksonSerializer {
 					element.getObjectUri(), documentUri));
 			relationship.put(SpdxConstantsCompatV2.PROP_RELATIONSHIP_TYPE.getName(), relationshipTypeStr);
 			relationship.put(SpdxConstantsCompatV2.PROP_RELATED_SPDX_ELEMENT.getName(), relatedElementId);
-			if (relationshipComment.isPresent()) {
-				relationship.put(SpdxConstantsCompatV2.RDFS_PROP_COMMENT.getName(), (String)relationshipComment.get());
-			}
+            relationshipComment.ifPresent(o -> relationship.put(SpdxConstantsCompatV2.RDFS_PROP_COMMENT.getName(), (String) o));
 			relationships.add(relationship);
 		}
 	}
@@ -545,8 +535,8 @@ public class JacksonSerializer {
 	 * @param documentUri Document namespace or Uri
 	 * @param valueList list of values to convert
 	 * @param relationships running total of any relationships found - any relationships are added
-	 * @return
-	 * @throws InvalidSPDXAnalysisException 
+	 * @return JSON ArrayNode representing the list of values
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
 	private ArrayNode toArrayNode(String documentUri, Iterator<Object> valueList, ArrayNode relationships) throws InvalidSPDXAnalysisException {
 		ArrayNode unsorted = mapper.createArrayNode();
@@ -554,9 +544,9 @@ public class JacksonSerializer {
 			Object value = valueList.next();
 			addValueToArrayNode(unsorted, documentUri, value, relationships);
 		}
-		List<JsonNode> nodeList = new ArrayList<>();
-		unsorted.spliterator().forEachRemaining((node) -> nodeList.add(node));
-		Collections.sort(nodeList, NODE_COMPARATOR);
+		@SuppressWarnings("MismatchedQueryAndUpdateOfCollection") List<JsonNode> nodeList = new ArrayList<>();
+		unsorted.spliterator().forEachRemaining(nodeList::add);
+		nodeList.sort(NODE_COMPARATOR);
 		return mapper.createArrayNode().addAll(unsorted);
 	}
 	
@@ -567,7 +557,7 @@ public class JacksonSerializer {
 	 * @param documentUri Document namespace or Uri
 	 * @param value Value to convert to a JSON serializable form
 	 * @param relationships ArrayNode of relationships to add any found relationships
-	 * @throws InvalidSPDXAnalysisException
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
 	private void setValueField(ObjectNode node, String field, String documentUri, Object value, ArrayNode relationships) throws InvalidSPDXAnalysisException {
 		Object nodeValue = toSerializable(documentUri, value, relationships);
@@ -580,7 +570,7 @@ public class JacksonSerializer {
 		} else if (nodeValue instanceof Boolean) {
 			node.put(field, (Boolean)nodeValue);
 		}else {
-			throw new SpdxInvalidTypeException("Can not serialize the JSON type for "+nodeValue.getClass().toString());
+			throw new SpdxInvalidTypeException("Can not serialize the JSON type for "+ nodeValue.getClass());
 		}
 	}
 	
@@ -590,7 +580,7 @@ public class JacksonSerializer {
 	 * @param documentUri Document namespace or Uri
 	 * @param value Value to convert to a JSON serializable form
 	 * @param relationships ArrayNode of relationships to add any found relationships
-	 * @throws InvalidSPDXAnalysisException 
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
 	private Object toSerializable(String documentUri, Object value, ArrayNode relationships) throws InvalidSPDXAnalysisException {
 		if (value instanceof IndividualUriValue) {
@@ -621,7 +611,7 @@ public class JacksonSerializer {
 	 * @param documentUri Document namespace or Uri
 	 * @param uri URI value
 	 * @return JSON form of the Enum or literal value represented by the URI
-	 * @throws InvalidSPDXAnalysisException
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
 	private String individualUriToString(String documentUri, String uri) throws InvalidSPDXAnalysisException {
 		Object enumval = SpdxEnumFactoryCompatV2.uriToEnum.get(uri);
@@ -651,7 +641,7 @@ public class JacksonSerializer {
 	 * @param documentUri Document namespace or Uri
 	 * @param value Value to convert to a JSON serializable form
 	 * @param relationships ArrayNode of relationships to add any found relationships
-	 * @throws InvalidSPDXAnalysisException
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
 	private void addValueToArrayNode(ArrayNode node, String documentUri, Object value, ArrayNode relationships) throws InvalidSPDXAnalysisException {
 		Object nodeValue = toSerializable(documentUri, value, relationships);
@@ -664,7 +654,7 @@ public class JacksonSerializer {
 		} else if (nodeValue instanceof Boolean) {
 			node.add((Boolean)nodeValue);
 		}else {
-			throw new SpdxInvalidTypeException("Can not serialize the JSON type for "+nodeValue.getClass().toString());
+			throw new SpdxInvalidTypeException("Can not serialize the JSON type for "+ nodeValue.getClass());
 		}
 	}
 }
