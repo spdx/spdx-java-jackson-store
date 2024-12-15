@@ -1,14 +1,15 @@
 /**
  * Copyright (c) 2020 Source Auditor Inc.
  *
+ * <p>
  * SPDX-License-Identifier: Apache-2.0
- * 
+ * <p>
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
  *   You may obtain a copy of the License at
- *
+ * <p>
  *       http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  *   Unless required by applicable law or agreed to in writing, software
  *   distributed under the License is distributed on an "AS IS" BASIS,
  *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -68,21 +69,19 @@ public class JacksonDeSerializer {
 	/**
 	 * Property names that should not be restored as part of the deserialization
 	 */
-	static final Set<String> SKIPPED_PROPERTIES = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(new String[] {
-			SpdxConstantsCompatV2.PROP_DOCUMENT_PACKAGES.getName(), 
-			SpdxConstantsCompatV2.PROP_DOCUMENT_FILES.getName(),
-			SpdxConstantsCompatV2.PROP_DOCUMENT_SNIPPETS.getName(), 
-			SpdxConstantsCompatV2.SPDX_IDENTIFIER, 
-			SpdxConstantsCompatV2.PROP_DOCUMENT_RELATIONSHIPS.getName(),
-			SpdxConstantsCompatV2.PROP_DOCUMENT_NAMESPACE.getName()
-	})));
+	static final Set<String> SKIPPED_PROPERTIES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(SpdxConstantsCompatV2.PROP_DOCUMENT_PACKAGES.getName(),
+            SpdxConstantsCompatV2.PROP_DOCUMENT_FILES.getName(),
+            SpdxConstantsCompatV2.PROP_DOCUMENT_SNIPPETS.getName(),
+            SpdxConstantsCompatV2.SPDX_IDENTIFIER,
+            SpdxConstantsCompatV2.PROP_DOCUMENT_RELATIONSHIPS.getName(),
+            SpdxConstantsCompatV2.PROP_DOCUMENT_NAMESPACE.getName())));
 
-	private CompatibleModelStoreWrapper store;
+	private final CompatibleModelStoreWrapper store;
 	@SuppressWarnings("unused")
-	private Format format;
+	private final Format format;
 
     private IModelCopyManager modelCopyManager;
-	private Map<String, Map<String, Map<SimpleUriValue, String>>> addedRelationships = new HashMap<>();
+	private final Map<String, Map<String, Map<SimpleUriValue, String>>> addedRelationships = new HashMap<>();
 
 	/**
 	 * @param store store to store any documents in
@@ -97,7 +96,7 @@ public class JacksonDeSerializer {
     /**
      * @param store store to store any documents in
      * @param modelCopyManager copy manager to use when copying from the SPDX listed license model store
-     * @parm format Format expected for the serialized data
+     * @param format Format expected for the serialized data
      */
     public JacksonDeSerializer(IModelStore store, IModelCopyManager modelCopyManager, Format format) {
         Objects.requireNonNull(store, "Model store can not be null");
@@ -112,7 +111,7 @@ public class JacksonDeSerializer {
 	 * Stores an SPDX document converted from the JsonNode doc
 	 * @param documentNamespace namespace for the document
 	 * @param doc JsonNode containing the SPDX document
-	 * @throws InvalidSPDXAnalysisException
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
 	@SuppressWarnings("unchecked")
 	public void storeDocument(String documentNamespace, JsonNode doc) throws InvalidSPDXAnalysisException {
@@ -170,12 +169,12 @@ public class JacksonDeSerializer {
 	
 	/**
 	 * Restores a single SPDX element of a specific type
-	 * @param documentUri
-	 * @param type
-	 * @param jsonNode
-	 * @param addedElements
+	 * @param documentUri namespace for the document
+	 * @param type SPDX Model object type
+	 * @param jsonNode node containing an element
+	 * @param addedElements map of any elements added to the mode
 	 * @param spdxIdProperties Properties which contain an SPDX ID which needs to be replaced
-	 * @throws InvalidSPDXAnalysisException
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
 	private void restoreElement(String documentUri, String type, @Nullable JsonNode jsonNode,
 			Map<String, TypedValue> addedElements, Map<String, String> spdxIdProperties) throws InvalidSPDXAnalysisException {
@@ -208,12 +207,12 @@ public class JacksonDeSerializer {
 
 	/**
 	 * Restores SPDX elements of a specific type
-	 * @param documentUri
-	 * @param type
-	 * @param jsonNode
-	 * @param addedElements
+	 * @param documentUri namespace for the document
+	 * @param type SPDX Model object type
+	 * @param jsonNode node containing an element
+	 * @param addedElements map of any elements added to the mode
 	 * @param spdxIdProperties Properties which contain an SPDX ID which needs to be replaced
-	 * @throws InvalidSPDXAnalysisException
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
 	private void restoreElements(String documentUri, String type, @Nullable JsonNode jsonNode,
 			Map<String, TypedValue> addedElements, Map<String, String> spdxIdProperties) throws InvalidSPDXAnalysisException {
@@ -234,10 +233,10 @@ public class JacksonDeSerializer {
 
 	/**
 	 * Restore the relationships adding them as properties to the correct elements
-	 * @param documentNamespace
-	 * @param jsonNode
-	 * @param addedElements
-	 * @throws InvalidSPDXAnalysisException 
+	 * @param documentNamespace namespace for the document
+	 * @param jsonNode node containing an element
+	 * @param addedElements map of any elements added to the mode
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
 	private void restoreRelationships(String documentNamespace, JsonNode jsonNode,
 			Map<String, TypedValue> addedElements) throws InvalidSPDXAnalysisException {
@@ -257,10 +256,10 @@ public class JacksonDeSerializer {
 
 	/**
 	 * Restore a relationship adding it as properties to the correct elements
-	 * @param documentNamespace
-	 * @param relationship
-	 * @param addedElements
-	 * @throws InvalidSPDXAnalysisException
+	 * @param documentNamespace namespace for the document
+	 * @param relationship JSON Node containing the relationship
+	 * @param addedElements map of any elements added to the mode
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
 	private void restoreRelationship(String documentNamespace, JsonNode relationship,
 																	 Map<String, TypedValue> addedElements) throws InvalidSPDXAnalysisException {
@@ -276,7 +275,7 @@ public class JacksonDeSerializer {
 		if (Objects.isNull(relationshipTypeNode) || !relationshipTypeNode.isTextual()) {
 			throw new InvalidSPDXAnalysisException("Missing required relationship type");
 		}
-		String relationshipTypeUri = null;
+		String relationshipTypeUri;
 		try {
 			relationshipTypeUri = RelationshipType.valueOf(relationshipTypeNode.asText()).getIndividualURI();
 		} catch(Exception ex) {
@@ -307,9 +306,9 @@ public class JacksonDeSerializer {
 	 * @param relatedElement related element
 	 * @param relationshipComment optional comment for the relationship
 	 * @return the ID of the relationship
-	 * @throws InvalidSPDXAnalysisException 
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
-	private String addRelationship(String documentNamespace, String elementId, SimpleUriValue relationshipType, Object relatedElement, Optional<String> relationshipComment) throws InvalidSPDXAnalysisException {
+	private String addRelationship(String documentNamespace, String elementId, SimpleUriValue relationshipType, Object relatedElement, @SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<String> relationshipComment) throws InvalidSPDXAnalysisException {
         String relatedElementId;
         if (relatedElement instanceof TypedValue) {
             relatedElementId = CompatibleModelStoreWrapper.objectUriToId(store, ((TypedValue)relatedElement).getObjectUri(), documentNamespace);
@@ -321,7 +320,7 @@ public class JacksonDeSerializer {
             throw new InvalidSPDXAnalysisException("Related element is not of an Element type for relationship to element "+elementId);
         }
 	    // check for duplicates
-	    Map<SimpleUriValue, String> relatedElementRelationships = null;
+	    Map<SimpleUriValue, String> relatedElementRelationships;
 	    Map<String, Map<SimpleUriValue, String>> elementRelationships = addedRelationships.get(elementId);
 	    if (Objects.nonNull(elementRelationships)) {
 	        relatedElementRelationships = elementRelationships.get(relatedElementId);
@@ -359,7 +358,7 @@ public class JacksonDeSerializer {
 	 * @param id ID for the element containing the properties
 	 * @param node Node containing the property values
 	 * @param spdxIdProperties Properties which contain an SPDX ID which needs to be replaced
-	 * @throws InvalidSPDXAnalysisException 
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
 	private void restoreObjectPropertyValues(String documentUri, String id, JsonNode node, 
 			Map<String, String> spdxIdProperties) throws InvalidSPDXAnalysisException {
@@ -367,14 +366,15 @@ public class JacksonDeSerializer {
 		while (fieldIterator.hasNext()) {
 			Entry<String, JsonNode> field = fieldIterator.next();
 			if (SKIPPED_PROPERTIES.contains(field.getKey())) {
-				continue;
+                //noinspection UnnecessaryContinue
+                continue;
 			} else if (SpdxConstantsCompatV2.PROP_DOCUMENT_DESCRIBES.getName().equals(field.getKey())) {
 				// These needs to be converted to a DocumentDescribes relationship
 				convertFieldToRelationship(documentUri, id, field.getValue(), 
 						RelationshipType.DESCRIBES, spdxIdProperties);
 			} else if (SpdxConstantsCompatV2.PROP_PACKAGE_FILE.getName().equals(
 					MultiFormatStore.collectionPropertyNameToPropertyName(field.getKey()))) {
-				// These needs to be converted to a CONTAINSS relationship
+				// These needs to be converted to a CONTAINS relationship
 				convertFieldToRelationship(documentUri, id, field.getValue(), 
 						RelationshipType.CONTAINS, spdxIdProperties);
 			} else {
@@ -392,15 +392,15 @@ public class JacksonDeSerializer {
 	 * @param spdxIdField Either a single SPDX ID or an array of SPDX IDs
 	 * @param relationshipType Relationship type to use
 	 * @param spdxIdProperties properties to add the relationship to
-	 * @throws InvalidSPDXAnalysisException 
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
 	private void convertFieldToRelationship(String documentUri, String id, JsonNode spdxIdField,
 			RelationshipType relationshipType, Map<String, String> spdxIdProperties) throws InvalidSPDXAnalysisException {
 		if ((spdxIdField instanceof ArrayNode)) {
-			for (JsonNode spdxidNode:((ArrayNode)spdxIdField)) {		
+			for (JsonNode spdxIdNode: spdxIdField) {
 				String relationshipId = addRelationship(documentUri, id, 
 						new SimpleUriValue(relationshipType.getIndividualURI()), 
-						spdxidNode.asText(), Optional.empty());
+						spdxIdNode.asText(), Optional.empty());
 				spdxIdProperties.put(relationshipId, SpdxConstantsCompatV2.PROP_RELATED_SPDX_ELEMENT.getName()); // Add the SPDX ID to the list to be translated back to elements later
 			}					
 		} else {
@@ -419,7 +419,7 @@ public class JacksonDeSerializer {
 	 * @param value JSON node containing the value
 	 * @param spdxIdProperties Properties which contain an SPDX ID which needs to be replaced
 	 * @param list true if this property is a list type
-	 * @throws InvalidSPDXAnalysisException
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
 	private void setPropertyValueForJsonNode(String documentUri, String id, String property, JsonNode value,
 			Map<String, String> spdxIdProperties, boolean list) throws InvalidSPDXAnalysisException {
@@ -435,13 +435,13 @@ public class JacksonDeSerializer {
 			// ignore te null;
 			Optional<String> propertyType = SpdxJsonLDContext.getInstance().getType(property);
 			if (list) {
-				store.addValueToCollection(documentUri, id, 
+				store.addValueToCollection(documentUri, id,
 						MultiFormatStore.collectionPropertyNameToPropertyName(property), 
 						toStoredObject(documentUri, id, 
-								property, value, propertyType, spdxIdProperties, list));
+								property, value, propertyType, spdxIdProperties, true));
 			} else {
 				store.setValue(documentUri, id, property, toStoredObject(documentUri, id, 
-						property, value, propertyType, spdxIdProperties, list));
+						property, value, propertyType, spdxIdProperties, false));
 			}
 		}
 	}
@@ -455,16 +455,17 @@ public class JacksonDeSerializer {
 	 * @param spdxIdProperties Properties which contain an SPDX ID which needs to be replaced
 	 * @param list true if this property is a list type
 	 * @return the object to be stored
-	 * @throws InvalidSPDXAnalysisException
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
-	private Object toStoredObject(String documentUri, String id, String property, JsonNode value, 
-			Optional<String> propertyType, Map<String, String> spdxIdProperties, boolean list) throws InvalidSPDXAnalysisException {
+	@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    private Object toStoredObject(String documentUri, String id, String property, JsonNode value,
+                                  Optional<String> propertyType, Map<String, String> spdxIdProperties, boolean list) throws InvalidSPDXAnalysisException {
 		switch (value.getNodeType()) {
 		case ARRAY:
 			throw new InvalidSPDXAnalysisException("Can not convert a JSON array to a stored object");
 		case BOOLEAN:
 			if (propertyType.isPresent()) {
-				Class<? extends Object> toStoreClass = SpdxJsonLDContext.XMLSCHEMA_TYPE_TO_JAVA_CLASS.get(propertyType.get());
+				Class<?> toStoreClass = SpdxJsonLDContext.XMLSCHEMA_TYPE_TO_JAVA_CLASS.get(propertyType.get());
 				if (Objects.isNull(toStoreClass)) {
 					// assume it is a boolean type
 					return value.asBoolean();
@@ -473,7 +474,7 @@ public class JacksonDeSerializer {
 				} else if (Boolean.class.equals(toStoreClass)) {
 					return value.asBoolean();
 				} else {
-					throw new InvalidSPDXAnalysisException("Can not convert a JSON BOOLEAN to a "+toStoreClass.toString());
+					throw new InvalidSPDXAnalysisException("Can not convert a JSON BOOLEAN to a "+ toStoreClass);
 				}
 			} else {
 				return value.asBoolean();
@@ -481,16 +482,16 @@ public class JacksonDeSerializer {
 		case NULL: throw new InvalidSPDXAnalysisException("Can not convert a JSON NULL to a stored object");
 		case NUMBER: {
 			if (propertyType.isPresent()) {
-				Class<? extends Object> toStoreClass = SpdxJsonLDContext.XMLSCHEMA_TYPE_TO_JAVA_CLASS.get(propertyType.get());
+				Class<?> toStoreClass = SpdxJsonLDContext.XMLSCHEMA_TYPE_TO_JAVA_CLASS.get(propertyType.get());
 				if (Objects.isNull(toStoreClass)) {
-					// assume it is a integer type
+					// assume it is an integer type
 					return value.asInt();
 				} else if (String.class.equals(toStoreClass)) {
 					return Double.toString(value.asDouble());
 				} else if (Integer.class.equals(toStoreClass)) {
 					return value.asInt();
 				} else {
-					throw new InvalidSPDXAnalysisException("Can not convert a JSON NUMBER to a "+toStoreClass.toString());
+					throw new InvalidSPDXAnalysisException("Can not convert a JSON NUMBER to a "+ toStoreClass);
 				}
 			} else {
 				return value.asInt();
@@ -522,28 +523,24 @@ public class JacksonDeSerializer {
 		case BINARY:
 		case MISSING:
 		case POJO:
-		default: throw new InvalidSPDXAnalysisException("Unsupported JSON node type: "+value.toString());
+		default: throw new InvalidSPDXAnalysisException("Unsupported JSON node type: "+ value);
 		}
 	}
-	
-	/**
-	 * @param spdxIdProperties Properties which contain an SPDX ID which needs to be replaced
-	 * 
-	 * @throws InvalidSPDXAnalysisException
-	 */
+
 	/**
 	 * Gets the property value for a string JsonNode
 	 * @param documentUri document URI
 	 * @param id ID of the object to store the value
 	 * @param property property name
 	 * @param value JSON node containing the value
-	 * @param propertyType
+	 * @param propertyType SPDX model type for the property
 	 * @param list true if this property is a list type
 	 * @return the appropriate object to store
-	 * @throws InvalidSPDXAnalysisException
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
-	private Object getStringPropertyValueForJsonNode(String documentUri, String id, String property, JsonNode value,
-			Optional<String> propertyType, Map<String, String> spdxIdProperties, boolean list) throws InvalidSPDXAnalysisException {
+	@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    private Object getStringPropertyValueForJsonNode(String documentUri, String id, String property, JsonNode value,
+                                                     Optional<String> propertyType, Map<String, String> spdxIdProperties, boolean list) throws InvalidSPDXAnalysisException {
 		Class<?> clazz = null;
 		if (propertyType.isPresent()) {
 			// check for SPDX model types
@@ -565,14 +562,7 @@ public class JacksonDeSerializer {
 			} else if (SpdxDocument.class.isAssignableFrom(clazz)) {
 				// Convert any IndividualUriValue values
 				final String uriValue = value.asText();
-				return new IndividualUriValue() {
-
-					@Override
-					public String getIndividualURI() {
-						return uriValue;
-					}
-					
-				};
+				return (IndividualUriValue) () -> uriValue;
 			} else if (ReferenceType.class.isAssignableFrom(clazz)) {
                 String referenceTypeValue = value.asText();
                 try {
@@ -587,14 +577,7 @@ public class JacksonDeSerializer {
                 }
                 final String uriValue = referenceTypeValue;
                 // Check for listed reference types
-                return new IndividualUriValue() {
-
-                    @Override
-                    public String getIndividualURI() {
-                        return uriValue;
-                    }
-                    
-                };
+                return (IndividualUriValue) () -> uriValue;
             } else if (SpdxElement.class.isAssignableFrom(clazz)) {
 				// store the ID and save it in the spdxIdProperties to replace with the actual class later
 				// once everything is restored
@@ -633,10 +616,10 @@ public class JacksonDeSerializer {
 
 
 	/**
-	 * @param documentUri
-	 * @param jsonObject
+	 * @param documentUri namespace for the document
+	 * @param jsonObject JSON Object to search for an ID
 	 * @return the ID for the JSON object based on what property values are available
-	 * @throws InvalidSPDXAnalysisException
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
 	private String findObjectIdInJsonObject(String documentUri, JsonNode jsonObject) throws InvalidSPDXAnalysisException {
 		JsonNode retval = jsonObject.get(SpdxConstantsCompatV2.SPDX_IDENTIFIER);
@@ -659,48 +642,28 @@ public class JacksonDeSerializer {
 
 	/**
 	 * Convert an ID into the value object to be stored
-	 * @param documentNamespace
+	 * @param documentNamespace namespace for the document
 	 * @param spdxId ID to be replaced by the actual object
 	 * @param addedElements SPDX elements added
-	 * @return
-	 * @throws InvalidSPDXAnalysisException 
+	 * @return value object to be stored
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
 	private Object idToObjectValue(String documentNamespace, String spdxId, Map<String, TypedValue> addedElements) throws InvalidSPDXAnalysisException {
 		TypedValue fixedValue = addedElements.get(spdxId);
 		if (Objects.isNull(fixedValue)) {
 			if (spdxId.equals(SpdxConstantsCompatV2.NONE_VALUE)) {
-				return new IndividualUriValue() {
-
-					@Override
-					public String getIndividualURI() {
-						return SpdxConstantsCompatV2.URI_VALUE_NONE;
-					}
-					
-				};
+				return (IndividualUriValue) () -> SpdxConstantsCompatV2.URI_VALUE_NONE;
 			} else if (spdxId.equals(SpdxConstantsCompatV2.NOASSERTION_VALUE)) {
-				return new IndividualUriValue() {
-
-					@Override
-					public String getIndividualURI() {
-						return SpdxConstantsCompatV2.URI_VALUE_NOASSERTION;
-					}
-					
-				};
+				return (IndividualUriValue) () -> SpdxConstantsCompatV2.URI_VALUE_NOASSERTION;
 			} else if (spdxId.startsWith("DocumentRef-")) {
 				final IModelStore modelStore = store;
-				IndividualUriValue spdxExternalElementRef = new IndividualUriValue() {
-
-					@Override
-					public String getIndividualURI() {
-						try {
-							return ExternalSpdxElement.externalSpdxElementIdToURI(spdxId, modelStore, documentNamespace, modelCopyManager);
-						} catch (InvalidSPDXAnalysisException e) {
-							throw new RuntimeException(e);
-						}
-					}
-					
-				};
-				return spdxExternalElementRef;
+                return (IndividualUriValue) () -> {
+                    try {
+                        return ExternalSpdxElement.externalSpdxElementIdToURI(spdxId, modelStore, documentNamespace, modelCopyManager);
+                    } catch (InvalidSPDXAnalysisException e) {
+                        throw new RuntimeException(e);
+                    }
+                };
 			} else {
 				throw new InvalidSPDXAnalysisException("No SPDX element found for SPDX ID "+spdxId);
 			}
