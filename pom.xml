@@ -102,7 +102,7 @@ This store supports serializing and deserializing files in JSON, YAML and XML fo
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-javadoc-plugin</artifactId>
-						<version>2.9</version>
+						<version>2.9.1</version>
 						<configuration>
 							<quiet>true</quiet>
 							<source>8</source>
@@ -147,7 +147,7 @@ This store supports serializing and deserializing files in JSON, YAML and XML fo
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.13.1</version>
+      <version>4.13.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -162,13 +162,23 @@ This store supports serializing and deserializing files in JSON, YAML and XML fo
     </dependency>
     <dependency>
     	<groupId>com.fasterxml.jackson.core</groupId>
+    	<artifactId>jackson-core</artifactId>
+    	<version>2.15.4</version>
+    </dependency>
+	<dependency>
+    	<groupId>com.fasterxml.jackson.core</groupId>
     	<artifactId>jackson-databind</artifactId>
-    	<version>2.16.0</version>
+    	<version>2.16.2</version>
     </dependency>
     <dependency>
     	<groupId>com.fasterxml.jackson.dataformat</groupId>
     	<artifactId>jackson-dataformat-xml</artifactId>
-    	<version>2.15.0</version>
+    	<version>2.15.4</version>
+    </dependency>
+    <dependency>
+    	<groupId>com.fasterxml.jackson.dataformat</groupId>
+    	<artifactId>jackson-dataformat-yaml</artifactId>
+    	<version>2.15.4</version>
     </dependency>
 	<dependency>
 		<groupId>com.github.java-json-tools</groupId>
@@ -177,19 +187,9 @@ This store supports serializing and deserializing files in JSON, YAML and XML fo
 		<scope>test</scope>
 	</dependency>
     <dependency>
-    	<groupId>com.fasterxml.jackson.dataformat</groupId>
-    	<artifactId>jackson-dataformat-yaml</artifactId>
-    	<version>2.15.0</version>
-    </dependency>
-    <dependency>
     	<groupId>org.json</groupId>
     	<artifactId>json</artifactId>
     	<version>20231013</version>
-    </dependency>
-    <dependency>
-    	<groupId>com.fasterxml.jackson.core</groupId>
-    	<artifactId>jackson-core</artifactId>
-    	<version>2.15.0</version>
     </dependency>
   </dependencies>
      <build>
@@ -267,7 +267,7 @@ This store supports serializing and deserializing files in JSON, YAML and XML fo
 			<plugin>
 				<groupId>org.spdx</groupId>
 					<artifactId>spdx-maven-plugin</artifactId>
-					<version>0.7.3</version>
+					<version>0.7.4</version>
 					<executions>
 						<execution>
 							<id>build-spdx</id>
@@ -312,7 +312,7 @@ This store supports serializing and deserializing files in JSON, YAML and XML fo
    		<plugin>
      		<groupId>org.codehaus.mojo</groupId>
      		<artifactId>findbugs-maven-plugin</artifactId>
-     		<version>3.0.1</version>
+     		<version>3.0.5</version>
    		</plugin>
    	</plugins>
   </reporting>
