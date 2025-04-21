@@ -92,7 +92,8 @@ public class MultiFormatStoreTest extends TestCase {
 	static final String JSON_NO_HAS_FILES_FILE_PATH = "testResources" + File.separator + "noHasFilesDescribes.json";
 	static final String XML_1REL_FILE_PATH = "testResources" + File.separator + "SPDXXML-SingleRel-v2.3.spdx.xml";
 	static final String JSON_SCHEMA_V2_3 = "testResources" + File.separator + "spdx-schema.json";
-	
+	static final String UNSORTED_JSON = "testResources" + File.separator + "SPDXJSONUnsortedIds.json";
+
 	/* (non-Javadoc)
 	 * @see junit.framework.TestCase#setUp()
 	 */
@@ -719,5 +720,42 @@ public class MultiFormatStoreTest extends TestCase {
 		return resultStore.getAllItems(null, SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT)
 			.map(tv -> tv.getObjectUri().substring(0, tv.getObjectUri().indexOf('#')))
 			.collect(Collectors.toList());
+	}
+
+	public void testSortOrder() throws InvalidSPDXAnalysisException, IOException, SpdxCompareException, ProcessingException {
+		File jsonFile = new File(UNSORTED_JSON);
+		MultiFormatStore inputStore = new MultiFormatStore(new InMemSpdxStore(), Format.JSON_PRETTY);
+		try (InputStream input = new FileInputStream(jsonFile)) {
+			inputStore.deSerialize(input, false);
+		}
+		Path tempDirPath = Files.createTempDirectory("mfsTestunsorted");
+		File serFile = tempDirPath.resolve("testspdx.json").toFile();
+		assertTrue(serFile.createNewFile());
+		try {
+			try (OutputStream stream = new FileOutputStream(serFile)) {
+				inputStore.serialize(stream);
+			}
+			ISerializableModelStore resultStore = new MultiFormatStore(new InMemSpdxStore(), MultiFormatStore.Format.JSON);
+			try (InputStream inStream = new FileInputStream(serFile)) {
+				JsonNode root = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT).readTree(inStream);
+				String previousId = "SPDXRef-Package-0";
+				for (JsonNode pkgNode : root.get("packages")) {
+					String spdxId = pkgNode.get("SPDXID").asText();
+					assertTrue(previousId.compareTo(spdxId) < 0);
+					previousId = spdxId;
+				}
+				previousId = "SPDXRef-File-0";
+				for (JsonNode pkgNode : root.get("files")) {
+					String spdxId = pkgNode.get("SPDXID").asText();
+					assertTrue(previousId.compareTo(spdxId) < 0);
+					previousId = spdxId;
+				}
+			}
+		} finally {
+			if (serFile.exists()) {
+				serFile.delete();
+			}
+			tempDirPath.toFile().delete();
+		}
 	}
 }

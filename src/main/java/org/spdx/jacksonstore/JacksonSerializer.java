@@ -28,6 +28,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -268,14 +270,17 @@ public class JacksonSerializer {
 			doc.put(SpdxConstantsCompatV2.PROP_DOCUMENT_NAMESPACE.getName(), documentUri);
 			ArrayNode packages = getDocElements(documentUri, SpdxConstantsCompatV2.CLASS_SPDX_PACKAGE, relationships);
 			if (!packages.isEmpty()) {
+				sortArrayNode(packages);
 				doc.set(SpdxConstantsCompatV2.PROP_DOCUMENT_PACKAGES.getName(), packages);
 			}
 			ArrayNode files = getDocElements(documentUri, SpdxConstantsCompatV2.CLASS_SPDX_FILE, relationships);
 			if (!files.isEmpty()) {
+				sortArrayNode(files);
 				doc.set(SpdxConstantsCompatV2.PROP_DOCUMENT_FILES.getName(), files);
 			}
 			ArrayNode snippets = getDocElements(documentUri, SpdxConstantsCompatV2.CLASS_SPDX_SNIPPET, relationships);
 			if (!snippets.isEmpty()) {
+				sortArrayNode(snippets);
 				doc.set(SpdxConstantsCompatV2.PROP_DOCUMENT_SNIPPETS.getName(), snippets);
 			}
 			//Remove duplicate relationships
@@ -302,7 +307,7 @@ public class JacksonSerializer {
 					relatedIds.add(relatedID);
 				}
 			}
-			
+			sortArrayNode(deDupedRelationships);
 			
 			doc.set(SpdxConstantsCompatV2.PROP_DOCUMENT_RELATIONSHIPS.getName(), deDupedRelationships);
 			ObjectNode output;
@@ -325,6 +330,16 @@ public class JacksonSerializer {
 			store.leaveCriticalSection(lock);
 		}
 	}
+
+	/**
+	 * Sorts the elements of an ArrayNode in place
+	 * @param an ArrayNode to sort
+	 */
+	private void sortArrayNode(ArrayNode an) {
+		List<JsonNode> arrayElements = StreamSupport.stream(an.spliterator(), false).sorted(NODE_COMPARATOR).collect(Collectors.toList());
+		an.removeAll();
+		an.addAll(arrayElements);
+    }
 
 	/**
 	 * Convert a typed value into an ObjectNode adding all stored properties
