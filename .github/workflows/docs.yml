@@ -1,8 +1,11 @@
+# SPDX-FileCopyrightText: 2025 SPDX contributors
+# SPDX-FileType: SOURCE
+# SPDX-License-Identifier: Apache-2.0
+
 name: Generate and publish API JavaDocs
 on:
   push:
-    branches:
-      - main
+    branches: [ master ]
   workflow_dispatch:
 
 jobs:
@@ -16,7 +19,7 @@ jobs:
     - uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
-        java-version: 11
+        java-version: 21
     - name: Cache Maven packages
       uses: actions/cache@v4
       with:
