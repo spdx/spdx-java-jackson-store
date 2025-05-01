@@ -161,6 +161,11 @@ public class JacksonSerializer {
 			}
 			List<String> fieldNames = new ArrayList<>();
 			arg0.fieldNames().forEachRemaining(fieldNames::add);
+			arg1.fieldNames().forEachRemaining(field -> {
+				if (!fieldNames.contains(field)) {
+					fieldNames.add(field);
+				}
+			});
 			Collections.sort(fieldNames);
 			int retval = 0;
 			for (String fieldName:fieldNames) {
@@ -335,7 +340,7 @@ public class JacksonSerializer {
 	 * Sorts the elements of an ArrayNode in place
 	 * @param an ArrayNode to sort
 	 */
-	private void sortArrayNode(ArrayNode an) {
+	protected static void sortArrayNode(ArrayNode an) {
 		List<JsonNode> arrayElements = StreamSupport.stream(an.spliterator(), false).sorted(NODE_COMPARATOR).collect(Collectors.toList());
 		an.removeAll();
 		an.addAll(arrayElements);

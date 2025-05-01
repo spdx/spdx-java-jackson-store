@@ -37,6 +37,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.spdx.core.DefaultModelStore;
 import org.spdx.core.InvalidSPDXAnalysisException;
 import org.spdx.core.ModelRegistry;
@@ -93,6 +94,7 @@ public class MultiFormatStoreTest extends TestCase {
 	static final String XML_1REL_FILE_PATH = "testResources" + File.separator + "SPDXXML-SingleRel-v2.3.spdx.xml";
 	static final String JSON_SCHEMA_V2_3 = "testResources" + File.separator + "spdx-schema.json";
 	static final String UNSORTED_JSON = "testResources" + File.separator + "SPDXJSONUnsortedIds.json";
+	static final String UNSORTED_RELATIONSHIPS = "testResources" + File.separator + "unsortedrelationships.json";
 
 	/* (non-Javadoc)
 	 * @see junit.framework.TestCase#setUp()
@@ -758,4 +760,38 @@ public class MultiFormatStoreTest extends TestCase {
 			tempDirPath.toFile().delete();
 		}
 	}
+
+	public void testRegressionSort() throws IOException {
+		File jsonFile = new File(UNSORTED_RELATIONSHIPS);
+		ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+		JsonNode relationships = null;
+		try (FileInputStream stream = new FileInputStream(jsonFile)) {
+			relationships  = mapper.readTree(stream);
+		}
+		assertTrue(relationships.isArray());
+		ArrayNode relArray = (ArrayNode)relationships;
+		for (int i = 0; i < relArray.size(); i++) {
+			for (int j = i; j < relArray.size(); j++) {
+				JsonNode rel1 = relArray.get(i);
+				JsonNode rel2 = relArray.get(j);
+				int result = JacksonSerializer.NODE_COMPARATOR.compare(rel1, rel2);
+				int revers = JacksonSerializer.NODE_COMPARATOR.compare(rel2, rel1);
+				if (relArray.get(i).equals(relArray.get(j))) {
+					assertEquals(0, result);
+				}
+				if (relArray.get(j).equals(relArray.get(i))) {
+					assertEquals(0, result);
+				}
+				if (result < 0) {
+					assertTrue(revers > 0);
+				} else if (result > 0) {
+					assertTrue(revers < 0);
+				} else {
+					assertEquals(0, revers);
+				}
+			}
+		}
+		JacksonSerializer.sortArrayNode(relArray);
+	}
+
 }
