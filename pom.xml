@@ -267,7 +267,7 @@ This store supports serializing and deserializing files in JSON, YAML and XML fo
 			<plugin>
 				<groupId>org.spdx</groupId>
 					<artifactId>spdx-maven-plugin</artifactId>
-					<version>1.0.0</version>
+					<version>1.0.2</version>
 					<executions>
 						<execution>
 							<id>build-spdx</id>
