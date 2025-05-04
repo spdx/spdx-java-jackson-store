@@ -1,15 +1,21 @@
 # spdx-java-jackson-store
+
+[![javadoc](https://javadoc.io/badge2/org.spdx/spdx-jackson-store/javadoc.svg)](https://javadoc.io/doc/org.spdx/spdx-jackson-store)
+
 Storage for SPDX documents utilizing [Jackson Databind](https://github.com/FasterXML/jackson-databind).
 
 This store supports serializing and deserializing files in JSON, YAML and XML formats.
 
 This library utilizes the [SPDX Java Library Storage Interface](https://github.com/spdx/Spdx-Java-Library#storage-interface) extending the `ExtendedSpdxStore` which allows for utilizing any underlying store which implements the [SPDX Java Library Storage Interface](https://github.com/spdx/Spdx-Java-Library#storage-interface).
 
-# Code quality badges
+## Code quality badges
 
-|   [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=spdx-jackson-store&metric=bugs)](https://sonarcloud.io/dashboard?id=spdx-jackson-store)    | [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=spdx-jackson-store&metric=security_rating)](https://sonarcloud.io/dashboard?id=spdx-jackson-store) | [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=spdx-jackson-store&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=spdx-jackson-store) | [![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=spdx-jackson-store&metric=sqale_index)](https://sonarcloud.io/dashboard?id=spdx-jackson-store) |
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=spdx-jackson-store&metric=bugs)](https://sonarcloud.io/dashboard?id=spdx-jackson-store)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=spdx-jackson-store&metric=security_rating)](https://sonarcloud.io/dashboard?id=spdx-jackson-store)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=spdx-jackson-store&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=spdx-jackson-store)
+[![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=spdx-jackson-store&metric=sqale_index)](https://sonarcloud.io/dashboard?id=spdx-jackson-store)
 
-# Using the Library
+## Using the Library
 
 This library is intended to be used in conjunction with the [SPDX Java Library](https://github.com/spdx/Spdx-Java-Library).
 
@@ -22,10 +28,15 @@ Create an instance of `MultiFormatStore(IModelStore baseStore, Format format)` p
 - `XML` - XML Format
 - `YAML` - YAML format
 
-# Serializing and Deserializing
+## Serializing and Deserializing
 
 This library supports the `ISerializableModelStore` interface for serializing and deserializing files based on the format specified.
 
-# Development Status
+## API Documentation
+
+- [Released API documentation](https://www.javadoc.io/doc/org.spdx/spdx-jackson-store) (as released on Maven Central)
+- [Development API documentation](https://spdx.github.io/spdx-java-jackson-store/) (updated with each GitHub change)
+
+## Development Status
 
 Mostly stable - although it has not been widely used.
