@@ -4,6 +4,8 @@
 
 Storage for SPDX documents utilizing [Jackson Databind](https://github.com/FasterXML/jackson-databind).
 
+NOTE: This library only supports SPDX Specification version 2.X formats.  For SPDX specification version 3.X formats, please use the [spdx-java-v3jsonld-store](https://github.com/spdx/spdx-java-v3jsonld-store).
+
 This store supports serializing and deserializing files in JSON, YAML and XML formats.
 
 This library utilizes the [SPDX Java Library Storage Interface](https://github.com/spdx/Spdx-Java-Library#storage-interface) extending the `ExtendedSpdxStore` which allows for utilizing any underlying store which implements the [SPDX Java Library Storage Interface](https://github.com/spdx/Spdx-Java-Library#storage-interface).
