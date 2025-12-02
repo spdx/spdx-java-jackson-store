@@ -181,6 +181,14 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 		JacksonSerializer serializer = new JacksonSerializer(outputMapper, format, verbose, this);
 		JsonNode output;
 		if (Objects.nonNull(modelObject)) {
+			if (modelObject.getSpecVersion().compareTo("3.0") >= 0) {
+				logger.error("Attempting to serialize an SPDX Spec version 3 model object");
+				throw new InvalidSPDXAnalysisException("Attempting to serialize an SPDX Spec version 3 model object");
+			}
+			if (!modelObject.getObjectUri().contains("#")) {
+				logger.error("SPDX spec version 2 model object does not contain a namespace prefix.  Missing '#' in model URI");
+				throw new InvalidSPDXAnalysisException("SPDX spec version 2 model object does not contain a namespace prefix.  Missing '#' in model URI");
+			}
 			output = serializer.docToJsonNode(modelObject.getObjectUri().substring(0, modelObject.getObjectUri().indexOf('#')));
 		} else {
 			List<String> allDocuments = getAllItems(null, SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT)
