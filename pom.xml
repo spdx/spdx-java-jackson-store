@@ -181,7 +181,7 @@ This store supports serializing and deserializing files in JSON, YAML and XML fo
     <dependency>
     	<groupId>org.json</groupId>
     	<artifactId>json</artifactId>
-    	<version>20250517</version>
+    	<version>20251224</version>
     </dependency>
   </dependencies>
      <build>
