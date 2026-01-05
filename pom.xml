@@ -315,6 +315,11 @@ This store supports serializing and deserializing files in JSON, YAML and XML fo
      		<artifactId>findbugs-maven-plugin</artifactId>
      		<version>3.0.5</version>
    		</plugin>
+   		<plugin>
+     		<groupId>org.sonarsource.scanner.maven</groupId>
+     		<artifactId>sonar-maven-plugin</artifactId>
+     		<version>5.5.0.6356</version>
+   		</plugin>
    	</plugins>
   </reporting>
 </project>
