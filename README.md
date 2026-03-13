@@ -1,5 +1,6 @@
-# spdx-java-jackson-store
+# SPDX Java Jackson Store
 
+[![Maven Central](https://img.shields.io/maven-central/v/org.spdx/spdx-jackson-store)](https://central.sonatype.com/artifact/org.spdx/spdx-jackson-store)
 [![javadoc](https://javadoc.io/badge2/org.spdx/spdx-jackson-store/javadoc.svg)](https://javadoc.io/doc/org.spdx/spdx-jackson-store)
 
 Storage for SPDX documents utilizing [Jackson Databind](https://github.com/FasterXML/jackson-databind).
