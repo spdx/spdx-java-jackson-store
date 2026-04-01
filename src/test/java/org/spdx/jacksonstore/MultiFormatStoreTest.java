@@ -761,6 +761,25 @@ public class MultiFormatStoreTest extends TestCase {
 		}
 	}
 
+	/**
+	 * Regression test for the spec-version guard in serialize(OutputStream, CoreModelObject).
+	 * "SPDX-2.3".compareTo("3.0") &gt; 0 (lexicographic), so the &gt;= 0 guard incorrectly fires
+	 * for all SPDX 2.x documents when a modelObject is supplied.
+	 */
+	public void testSerializeWithModelObjectSpdxV2() throws InvalidSPDXAnalysisException, IOException {
+		File jsonFile = new File(JSON_FILE_PATH); // SPDX 2.3 fixture, with "SPDX-2.3" specVersion
+		MultiFormatStore store = new MultiFormatStore(new InMemSpdxStore(), Format.JSON_PRETTY);
+		try (InputStream input = new FileInputStream(jsonFile)) {
+			store.deSerialize(input, false);
+		}
+		String documentUri = store.getDocumentUris().toArray(new String[0])[0];
+		SpdxDocument doc = new SpdxDocument(store, documentUri, null, false);
+
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		store.serialize(out, doc);
+		assertTrue("Serialized output should not be empty", out.size() > 0);
+	}
+
 	public void testRegressionSort() throws IOException {
 		File jsonFile = new File(UNSORTED_RELATIONSHIPS);
 		ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);

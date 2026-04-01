@@ -181,7 +181,7 @@ public class MultiFormatStore extends ExtendedSpdxStore implements ISerializable
 		JacksonSerializer serializer = new JacksonSerializer(outputMapper, format, verbose, this);
 		JsonNode output;
 		if (Objects.nonNull(modelObject)) {
-			if (modelObject.getSpecVersion().compareTo("3.0") >= 0) {
+			if (!modelObject.getSpecVersion().startsWith("SPDX-") && modelObject.getSpecVersion().compareTo("3.0") >= 0) {
 				logger.error("Attempting to serialize an SPDX Spec version 3 model object");
 				throw new InvalidSPDXAnalysisException("Attempting to serialize an SPDX Spec version 3 model object");
 			}
