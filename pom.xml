@@ -309,7 +309,7 @@ This store supports serializing and deserializing files in JSON, YAML and XML fo
 	          <plugin>
 				<groupId>org.sonarsource.scanner.maven</groupId>
 				<artifactId>sonar-maven-plugin</artifactId>
-				<version>5.5.0.6356</version>
+				<version>5.6.0.6792</version>
 	          </plugin>
 		</plugins>
   </build>
